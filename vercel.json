@@ -1,0 +1,7 @@
+{
+  "buildCommand": "pnpm --filter @workspace/prime-link-os run build",
+  "outputDirectory": "artifacts/prime-link-os/dist/public",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
