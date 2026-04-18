@@ -1,4 +1,4 @@
-import { useListEarnings } from "@workspace/api-client-react";
+import { useListEarnings } from "@/lib/db";
 import { useAuth } from "@/hooks/use-auth";
 import { DollarSign, Clock, CheckCircle, TrendingUp } from "lucide-react";
 
@@ -11,15 +11,17 @@ const typeColors: Record<string, string> = {
 export default function SalesmanEarnings() {
   const { user } = useAuth();
   const { data: allEarnings } = useListEarnings({});
-  const earnings = (allEarnings ?? []).filter(e => e.userId === user?.id);
+  const earnings = (allEarnings ?? []).filter((e) => e.userId === user?.id);
 
   const total = earnings.reduce((s, e) => s + e.amount, 0);
-  const completed = earnings.filter(e => e.status === "completed").reduce((s, e) => s + e.amount, 0);
-  const pending = earnings.filter(e => e.status === "pending").reduce((s, e) => s + e.amount, 0);
+  const completed = earnings.filter((e) => e.status === "completed").reduce((s, e) => s + e.amount, 0);
+  const pending = earnings.filter((e) => e.status === "pending").reduce((s, e) => s + e.amount, 0);
 
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthly = earnings.filter(e => new Date(e.createdAt) >= startOfMonth).reduce((s, e) => s + e.amount, 0);
+  const monthly = earnings
+    .filter((e) => new Date(e.createdAt) >= startOfMonth)
+    .reduce((s, e) => s + e.amount, 0);
 
   return (
     <div className="space-y-6">
@@ -56,7 +58,7 @@ export default function SalesmanEarnings() {
           <h2 className="text-base font-bold text-white">Transaction History</h2>
         </div>
         <div className="divide-y divide-white/5">
-          {earnings.map(e => (
+          {earnings.map((e) => (
             <div key={e.id} className="flex items-center gap-4 px-6 py-4 hover:bg-white/[0.02] transition-colors">
               <div className="w-9 h-9 bg-blue-500/10 rounded-xl flex items-center justify-center shrink-0">
                 <DollarSign className="h-4 w-4 text-blue-400" />
@@ -65,14 +67,20 @@ export default function SalesmanEarnings() {
                 <p className="text-sm font-medium text-white">{e.description ?? e.type}</p>
                 <p className="text-xs text-white/30">{new Date(e.createdAt).toLocaleDateString()}</p>
               </div>
-              <span className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${typeColors[e.type] ?? "bg-white/5 text-white/30"}`}>{e.type}</span>
+              <span className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${typeColors[e.type] ?? "bg-white/5 text-white/30"}`}>
+                {e.type}
+              </span>
               <div className="text-right shrink-0">
                 <p className="font-bold text-white">${e.amount.toFixed(2)}</p>
-                <p className={`text-xs capitalize ${e.status === "completed" ? "text-emerald-400" : "text-yellow-400"}`}>{e.status}</p>
+                <p className={`text-xs capitalize ${e.status === "completed" ? "text-emerald-400" : "text-yellow-400"}`}>
+                  {e.status}
+                </p>
               </div>
             </div>
           ))}
-          {earnings.length === 0 && <p className="px-6 py-12 text-center text-white/20 text-sm">No earnings yet</p>}
+          {earnings.length === 0 && (
+            <p className="px-6 py-12 text-center text-white/20 text-sm">No earnings yet</p>
+          )}
         </div>
       </div>
     </div>

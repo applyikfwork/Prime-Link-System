@@ -1,18 +1,20 @@
-import { useListEarnings } from "@workspace/api-client-react";
+import { useListEarnings } from "@/lib/db";
 import { useAuth } from "@/hooks/use-auth";
 import { DollarSign, Clock, CheckCircle, TrendingUp } from "lucide-react";
 
 export default function WorkerEarnings() {
   const { user } = useAuth();
   const { data: allEarnings } = useListEarnings({});
-  const earnings = (allEarnings ?? []).filter(e => e.userId === user?.id);
+  const earnings = (allEarnings ?? []).filter((e) => e.userId === user?.id);
 
   const total = earnings.reduce((s, e) => s + e.amount, 0);
-  const completed = earnings.filter(e => e.status === "completed").reduce((s, e) => s + e.amount, 0);
-  const pending = earnings.filter(e => e.status === "pending").reduce((s, e) => s + e.amount, 0);
+  const completed = earnings.filter((e) => e.status === "completed").reduce((s, e) => s + e.amount, 0);
+  const pending = earnings.filter((e) => e.status === "pending").reduce((s, e) => s + e.amount, 0);
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthly = earnings.filter(e => new Date(e.createdAt) >= startOfMonth).reduce((s, e) => s + e.amount, 0);
+  const monthly = earnings
+    .filter((e) => new Date(e.createdAt) >= startOfMonth)
+    .reduce((s, e) => s + e.amount, 0);
 
   return (
     <div className="space-y-6">
@@ -49,10 +51,18 @@ export default function WorkerEarnings() {
           <h2 className="text-base font-bold text-white">Payment History</h2>
         </div>
         <div className="divide-y divide-white/5">
-          {earnings.map(e => (
+          {earnings.map((e) => (
             <div key={e.id} className="flex items-center gap-4 px-6 py-4 hover:bg-white/[0.02] transition-colors">
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${e.status === "completed" ? "bg-emerald-500/10" : "bg-yellow-500/10"}`}>
-                {e.status === "completed" ? <CheckCircle className="h-4 w-4 text-emerald-400" /> : <Clock className="h-4 w-4 text-yellow-400" />}
+              <div
+                className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                  e.status === "completed" ? "bg-emerald-500/10" : "bg-yellow-500/10"
+                }`}
+              >
+                {e.status === "completed" ? (
+                  <CheckCircle className="h-4 w-4 text-emerald-400" />
+                ) : (
+                  <Clock className="h-4 w-4 text-yellow-400" />
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-white">{e.description ?? e.type}</p>
@@ -60,11 +70,21 @@ export default function WorkerEarnings() {
               </div>
               <div className="text-right shrink-0">
                 <p className="font-bold text-white">${e.amount.toFixed(2)}</p>
-                <p className={`text-xs capitalize ${e.status === "completed" ? "text-emerald-400" : "text-yellow-400"}`}>{e.status}</p>
+                <p
+                  className={`text-xs capitalize ${
+                    e.status === "completed" ? "text-emerald-400" : "text-yellow-400"
+                  }`}
+                >
+                  {e.status}
+                </p>
               </div>
             </div>
           ))}
-          {earnings.length === 0 && <p className="px-6 py-12 text-center text-white/20 text-sm">No earnings yet. Complete tasks to earn payments.</p>}
+          {earnings.length === 0 && (
+            <p className="px-6 py-12 text-center text-white/20 text-sm">
+              No earnings yet. Complete tasks to earn payments.
+            </p>
+          )}
         </div>
       </div>
     </div>

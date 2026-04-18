@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { useListPlans, useCreatePlan, useUpdatePlan, useDeletePlan, getListPlansQueryKey } from "@workspace/api-client-react";
+import { useListPlans, useCreatePlan, useUpdatePlan, useDeletePlan, getListPlansQueryKey, type Plan } from "@/lib/db";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Edit2, X, Check, Briefcase, DollarSign } from "lucide-react";
+import { Plus, Trash2, Edit2, X, Check, Briefcase } from "lucide-react";
 
 export default function AdminPlans() {
   const { data: plans, isLoading } = useListPlans();
@@ -12,33 +12,53 @@ export default function AdminPlans() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [showForm, setShowForm] = useState(false);
-  const [editId, setEditId] = useState<number | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", clientPrice: "", salesmanCommission: "", workerPayment: "", description: "" });
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: getListPlansQueryKey() });
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
-    const data = { name: form.name, clientPrice: parseFloat(form.clientPrice), salesmanCommission: parseFloat(form.salesmanCommission), workerPayment: parseFloat(form.workerPayment), description: form.description };
+    const data = {
+      name: form.name,
+      clientPrice: parseFloat(form.clientPrice),
+      salesmanCommission: parseFloat(form.salesmanCommission),
+      workerPayment: parseFloat(form.workerPayment),
+      description: form.description,
+    };
     if (editId) {
       updatePlan.mutate({ id: editId, data }, {
-        onSuccess: () => { setEditId(null); setShowForm(false); setForm({ name: "", clientPrice: "", salesmanCommission: "", workerPayment: "", description: "" }); invalidate(); toast({ title: "Plan updated" }); },
+        onSuccess: () => {
+          setEditId(null); setShowForm(false);
+          setForm({ name: "", clientPrice: "", salesmanCommission: "", workerPayment: "", description: "" });
+          invalidate(); toast({ title: "Plan updated" });
+        },
       });
     } else {
       createPlan.mutate({ data }, {
-        onSuccess: () => { setShowForm(false); setForm({ name: "", clientPrice: "", salesmanCommission: "", workerPayment: "", description: "" }); invalidate(); toast({ title: "Plan created" }); },
+        onSuccess: () => {
+          setShowForm(false);
+          setForm({ name: "", clientPrice: "", salesmanCommission: "", workerPayment: "", description: "" });
+          invalidate(); toast({ title: "Plan created" });
+        },
       });
     }
   };
 
-  const handleEdit = (plan: typeof plans extends (infer T)[] | undefined ? T : never) => {
+  const handleEdit = (plan: Plan) => {
     if (!plan) return;
-    setForm({ name: plan.name, clientPrice: String(plan.clientPrice), salesmanCommission: String(plan.salesmanCommission), workerPayment: String(plan.workerPayment), description: plan.description ?? "" });
+    setForm({
+      name: plan.name,
+      clientPrice: String(plan.clientPrice),
+      salesmanCommission: String(plan.salesmanCommission),
+      workerPayment: String(plan.workerPayment),
+      description: plan.description ?? "",
+    });
     setEditId(plan.id);
     setShowForm(true);
   };
 
-  const handleDelete = (id: number, name: string) => {
+  const handleDelete = (id: string, name: string) => {
     if (!confirm(`Delete plan "${name}"?`)) return;
     deletePlan.mutate({ id }, { onSuccess: () => { invalidate(); toast({ title: "Plan deleted" }); } });
   };

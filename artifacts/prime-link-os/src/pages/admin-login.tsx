@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useLogin } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useLogin } from "@/lib/db";
 import { Shield, Eye, EyeOff, AlertCircle } from "lucide-react";
 
 export default function AdminLoginPage() {
@@ -10,7 +9,6 @@ export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [, setLocation] = useLocation();
-  const queryClient = useQueryClient();
   const loginMutation = useLogin();
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -20,15 +18,14 @@ export default function AdminLoginPage() {
       { data: { email, password } },
       {
         onSuccess: (data) => {
-          queryClient.invalidateQueries();
           if (data.user.role === "admin") {
             setLocation("/admin");
           } else {
             setError("This login is for administrators only.");
           }
         },
-        onError: () => {
-          setError("Invalid credentials. Access denied.");
+        onError: (err) => {
+          setError(err instanceof Error ? err.message : "Invalid credentials. Access denied.");
         },
       }
     );
@@ -82,7 +79,11 @@ export default function AdminLoginPage() {
                   placeholder="••••••••"
                   required
                 />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors">
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+                >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>

@@ -1,8 +1,23 @@
-import { useGetDashboardStats, useGetRevenueAnalytics, useGetTopPerformers, useListUsers } from "@workspace/api-client-react";
+import { useEffect } from "react";
+import { useGetDashboardStats, useGetRevenueAnalytics, useGetTopPerformers, useListUsers } from "@/lib/db";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { DollarSign, Users, CheckSquare, Clock, TrendingUp, UserCheck, AlertTriangle, Building } from "lucide-react";
+import { DollarSign, Users, CheckSquare, TrendingUp, UserCheck, AlertTriangle, Building } from "lucide-react";
 
-function StatCard({ icon: Icon, label, value, sub, color = "blue" }: { icon: React.ElementType; label: string; value: string | number; sub?: string; color?: string }) {
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  sub,
+  color = "blue",
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: string | number;
+  sub?: string;
+  color?: string;
+}) {
   const colorMap: Record<string, string> = {
     blue: "bg-blue-500/10 text-blue-400",
     green: "bg-emerald-500/10 text-emerald-400",
@@ -26,19 +41,40 @@ function StatCard({ icon: Icon, label, value, sub, color = "blue" }: { icon: Rea
 }
 
 export default function AdminDashboard() {
+  const qc = useQueryClient();
   const { data: stats, isLoading } = useGetDashboardStats();
   const { data: revenue } = useGetRevenueAnalytics();
   const { data: performers } = useGetTopPerformers();
   const { data: users } = useListUsers();
 
-  const onlineUsers = users?.filter(u => u.online) ?? [];
+  useEffect(() => {
+    const channel = supabase
+      .channel("admin-dashboard-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "users" }, () => {
+        qc.invalidateQueries({ queryKey: ["users"] });
+        qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, () => {
+        qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "clients" }, () => {
+        qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [qc]);
 
   if (isLoading) {
     return (
       <div className="space-y-6 animate-pulse">
         <div className="h-8 bg-white/5 rounded-lg w-64" />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(8)].map((_, i) => <div key={i} className="h-32 bg-white/5 rounded-2xl" />)}
+          {[...Array(8)].map((_, i) => (
+            <div key={i} className="h-32 bg-white/5 rounded-2xl" />
+          ))}
         </div>
       </div>
     );
@@ -57,13 +93,12 @@ export default function AdminDashboard() {
         <StatCard icon={Users} label="Total Employees" value={stats?.totalEmployees ?? 0} sub={`${stats?.onlineEmployees ?? 0} online now`} color="indigo" />
         <StatCard icon={Building} label="Total Clients" value={stats?.totalClients ?? 0} sub={`${stats?.newClientsThisMonth ?? 0} new this month`} color="purple" />
         <StatCard icon={CheckSquare} label="Tasks Ongoing" value={stats?.ongoingTasks ?? 0} color="yellow" />
-        <StatCard icon={TrendingUp} label="Tasks Completed" value={stats?.completedTasks ?? 0} color="green" />
+        <StatCard icon={UserCheck} label="Tasks Completed" value={stats?.completedTasks ?? 0} color="green" />
         <StatCard icon={AlertTriangle} label="Pending Approvals" value={stats?.pendingApprovals ?? 0} color="red" />
         <StatCard icon={DollarSign} label="Salary Owed" value={`$${(stats?.totalSalaryOwed ?? 0).toFixed(0)}`} sub={`Profit: $${(stats?.profit ?? 0).toFixed(0)}`} color="yellow" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Revenue Chart */}
         <div className="lg:col-span-2 bg-white/[0.03] border border-white/5 rounded-2xl p-6">
           <h2 className="text-base font-bold text-white mb-6">Revenue vs Salary (Last 6 Months)</h2>
           {revenue && revenue.length > 0 ? (
@@ -72,69 +107,103 @@ export default function AdminDashboard() {
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                 <XAxis dataKey="month" tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 11 }} />
                 <YAxis tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 11 }} />
-                <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "white" }} />
+                <Tooltip
+                  contentStyle={{
+                    background: "#0f172a",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: "8px",
+                    color: "white",
+                  }}
+                />
                 <Bar dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Revenue" />
                 <Bar dataKey="salary" fill="#6366f1" radius={[4, 4, 0, 0]} name="Salary" />
                 <Bar dataKey="profit" fill="#10b981" radius={[4, 4, 0, 0]} name="Profit" />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-[220px] flex items-center justify-center text-white/20 text-sm">No revenue data yet</div>
+            <div className="h-[220px] flex items-center justify-center text-white/20 text-sm">
+              No revenue data yet
+            </div>
           )}
         </div>
 
-        {/* Online Employees */}
         <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-6">
           <h2 className="text-base font-bold text-white mb-4">Live Employee Status</h2>
           <div className="space-y-3">
-            {(users ?? []).slice(0, 8).map((user) => (
-              <div key={user.id} className="flex items-center gap-3">
-                <div className={`w-2 h-2 rounded-full shrink-0 ${user.online ? "bg-emerald-400" : "bg-white/10"}`} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-white/80 font-medium truncate">{user.name}</p>
-                  <p className="text-xs text-white/30 capitalize">{user.role}</p>
+            {(users ?? [])
+              .filter((u) => u.role !== "admin")
+              .slice(0, 8)
+              .map((user) => (
+                <div key={user.id} className="flex items-center gap-3">
+                  <div
+                    className={`w-2 h-2 rounded-full shrink-0 ${
+                      user.online ? "bg-emerald-400" : "bg-white/10"
+                    }`}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-white/80 font-medium truncate">{user.name}</p>
+                    <p className="text-xs text-white/30 capitalize">{user.role}</p>
+                  </div>
+                  <span
+                    className={`text-xs px-2 py-0.5 rounded-full ${
+                      user.online
+                        ? "bg-emerald-500/10 text-emerald-400"
+                        : "bg-white/5 text-white/20"
+                    }`}
+                  >
+                    {user.online ? "Online" : "Offline"}
+                  </span>
                 </div>
-                <span className={`text-xs px-2 py-0.5 rounded-full ${user.online ? "bg-emerald-500/10 text-emerald-400" : "bg-white/5 text-white/20"}`}>
-                  {user.online ? "Online" : "Offline"}
-                </span>
-              </div>
-            ))}
-            {(users?.length ?? 0) === 0 && <p className="text-white/20 text-sm">No employees yet</p>}
+              ))}
+            {(users?.filter((u) => u.role !== "admin").length ?? 0) === 0 && (
+              <p className="text-white/20 text-sm">No employees yet</p>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Top Performers */}
       {performers && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-6">
             <h2 className="text-base font-bold text-white mb-4">Top Salesmen</h2>
             <div className="space-y-3">
-              {performers.topSalesmen.length > 0 ? performers.topSalesmen.map((p, i) => (
-                <div key={p.userId} className="flex items-center gap-3">
-                  <span className="text-white/20 text-sm font-bold w-5">#{i + 1}</span>
-                  <div className="flex-1">
-                    <p className="text-sm text-white/80 font-medium">{p.name}</p>
-                    <p className="text-xs text-white/30">{p.count} clients</p>
+              {performers.topSalesmen.length > 0 ? (
+                performers.topSalesmen.map((p, i) => (
+                  <div key={p.userId} className="flex items-center gap-3">
+                    <span className="text-white/20 text-sm font-bold w-5">#{i + 1}</span>
+                    <div className="flex-1">
+                      <p className="text-sm text-white/80 font-medium">{p.name}</p>
+                      <p className="text-xs text-white/30">{p.count} clients</p>
+                    </div>
+                    <span className="text-sm font-bold text-blue-400">
+                      ${p.totalEarnings.toFixed(0)}
+                    </span>
                   </div>
-                  <span className="text-sm font-bold text-blue-400">${p.totalEarnings.toFixed(0)}</span>
-                </div>
-              )) : <p className="text-white/20 text-sm">No data yet</p>}
+                ))
+              ) : (
+                <p className="text-white/20 text-sm">No data yet</p>
+              )}
             </div>
           </div>
           <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-6">
             <h2 className="text-base font-bold text-white mb-4">Top Workers</h2>
             <div className="space-y-3">
-              {performers.topWorkers.length > 0 ? performers.topWorkers.map((p, i) => (
-                <div key={p.userId} className="flex items-center gap-3">
-                  <span className="text-white/20 text-sm font-bold w-5">#{i + 1}</span>
-                  <div className="flex-1">
-                    <p className="text-sm text-white/80 font-medium">{p.name}</p>
-                    <p className="text-xs text-white/30">{p.count} tasks completed</p>
+              {performers.topWorkers.length > 0 ? (
+                performers.topWorkers.map((p, i) => (
+                  <div key={p.userId} className="flex items-center gap-3">
+                    <span className="text-white/20 text-sm font-bold w-5">#{i + 1}</span>
+                    <div className="flex-1">
+                      <p className="text-sm text-white/80 font-medium">{p.name}</p>
+                      <p className="text-xs text-white/30">{p.count} tasks completed</p>
+                    </div>
+                    <span className="text-sm font-bold text-indigo-400">
+                      ${p.totalEarnings.toFixed(0)}
+                    </span>
                   </div>
-                  <span className="text-sm font-bold text-indigo-400">${p.totalEarnings.toFixed(0)}</span>
-                </div>
-              )) : <p className="text-white/20 text-sm">No data yet</p>}
+                ))
+              ) : (
+                <p className="text-white/20 text-sm">No data yet</p>
+              )}
             </div>
           </div>
         </div>
