@@ -101,14 +101,11 @@ alter publication supabase_realtime add table clients;
 -- ─── Seed: Default Admin Account ─────────────────────────────
 -- Password: Admin@PrimeLink2024
 -- SHA-256 hash of "Admin@PrimeLink2024"
--- CHANGE THIS PASSWORD after first login by re-hashing in browser console:
--- const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('YourNewPassword'));
--- console.log(Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join(''));
 insert into users (name, email, password_hash, role, status)
 values (
   'Prime Link Admin',
-  'admin@primelink.io',
-  'b3e9a72a43b1e4d6b82f33d5c7a291e1f05b6c9c5e5e0fae4b3a0f9c14c3e27',
+  'xyzapplywork@gmail.com',
+  '1bd2fea57af48cd65b144f9ea0737c5fdc64142865a980c532e6b8ae4652142f',
   'admin',
   'active'
 ) on conflict (email) do nothing;
