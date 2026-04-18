@@ -1,15 +1,31 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Prime Link OS API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: users
+    description: User management
+  - name: clients
+    description: Client management
+  - name: tasks
+    description: Task management
+  - name: earnings
+    description: Earnings management
+  - name: messages
+    description: Chat messages
+  - name: analytics
+    description: Analytics and dashboard data
+  - name: plans
+    description: Service plans
+
 paths:
   /healthz:
     get:
@@ -24,6 +40,604 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout user
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List all users (admin only)
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+    post:
+      operationId: createUser
+      tags: [users]
+      summary: Create a new user (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserBody"
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/{id}:
+    get:
+      operationId: getUser
+      tags: [users]
+      summary: Get user by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateUser
+      tags: [users]
+      summary: Update user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserBody"
+      responses:
+        "200":
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+    delete:
+      operationId: deleteUser
+      tags: [users]
+      summary: Delete user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /users/online:
+    get:
+      operationId: getOnlineUsers
+      tags: [users]
+      summary: Get currently online users
+      responses:
+        "200":
+          description: Online users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+  /users/{id}/status:
+    patch:
+      operationId: updateUserStatus
+      tags: [users]
+      summary: Update user online status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStatusBody"
+      responses:
+        "200":
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /clients:
+    get:
+      operationId: listClients
+      tags: [clients]
+      summary: List clients
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: addedBy
+          in: query
+          schema:
+            type: ["integer", "null"]
+      responses:
+        "200":
+          description: List of clients
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Client"
+    post:
+      operationId: createClient
+      tags: [clients]
+      summary: Create a new client
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateClientBody"
+      responses:
+        "201":
+          description: Client created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+
+  /clients/{id}:
+    get:
+      operationId: getClient
+      tags: [clients]
+      summary: Get client by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Client found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+    patch:
+      operationId: updateClient
+      tags: [clients]
+      summary: Update client
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateClientBody"
+      responses:
+        "200":
+          description: Client updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+
+  /tasks:
+    get:
+      operationId: listTasks
+      tags: [tasks]
+      summary: List tasks
+      parameters:
+        - name: assignedTo
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: priority
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+    post:
+      operationId: createTask
+      tags: [tasks]
+      summary: Create a new task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTaskBody"
+      responses:
+        "201":
+          description: Task created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+
+  /tasks/{id}:
+    get:
+      operationId: getTask
+      tags: [tasks]
+      summary: Get task by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Task found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+    patch:
+      operationId: updateTask
+      tags: [tasks]
+      summary: Update task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTaskBody"
+      responses:
+        "200":
+          description: Task updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+
+  /earnings:
+    get:
+      operationId: listEarnings
+      tags: [earnings]
+      summary: List earnings
+      parameters:
+        - name: userId
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of earnings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Earning"
+    post:
+      operationId: createEarning
+      tags: [earnings]
+      summary: Create an earning record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEarningBody"
+      responses:
+        "201":
+          description: Earning created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Earning"
+
+  /earnings/{id}:
+    patch:
+      operationId: updateEarning
+      tags: [earnings]
+      summary: Update earning status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateEarningBody"
+      responses:
+        "200":
+          description: Earning updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Earning"
+
+  /messages:
+    get:
+      operationId: listMessages
+      tags: [messages]
+      summary: List messages
+      parameters:
+        - name: receiverId
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: isGroup
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Message"
+    post:
+      operationId: createMessage
+      tags: [messages]
+      summary: Send a message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMessageBody"
+      responses:
+        "201":
+          description: Message sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+
+  /messages/{id}/read:
+    patch:
+      operationId: markMessageRead
+      tags: [messages]
+      summary: Mark message as read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Message marked read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+
+  /plans:
+    get:
+      operationId: listPlans
+      tags: [plans]
+      summary: List service plans
+      responses:
+        "200":
+          description: List of plans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Plan"
+    post:
+      operationId: createPlan
+      tags: [plans]
+      summary: Create a service plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePlanBody"
+      responses:
+        "201":
+          description: Plan created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Plan"
+
+  /plans/{id}:
+    patch:
+      operationId: updatePlan
+      tags: [plans]
+      summary: Update a plan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePlanBody"
+      responses:
+        "200":
+          description: Plan updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Plan"
+    delete:
+      operationId: deletePlan
+      tags: [plans]
+      summary: Delete a plan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /analytics/dashboard:
+    get:
+      operationId: getDashboardStats
+      tags: [analytics]
+      summary: Get admin dashboard statistics
+      responses:
+        "200":
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
+  /analytics/revenue:
+    get:
+      operationId: getRevenueAnalytics
+      tags: [analytics]
+      summary: Get revenue analytics by month
+      responses:
+        "200":
+          description: Revenue analytics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RevenueByMonth"
+
+  /analytics/top-performers:
+    get:
+      operationId: getTopPerformers
+      tags: [analytics]
+      summary: Get top performing salesmen and workers
+      responses:
+        "200":
+          description: Top performers
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TopPerformers"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +648,496 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required:
+        - success
+
+    LoginBody:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required:
+        - email
+        - password
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        token:
+          type: string
+      required:
+        - user
+        - token
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+        status:
+          type: string
+        online:
+          type: boolean
+        lastActive:
+          type: ["string", "null"]
+        performanceScore:
+          type: ["number", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - email
+        - role
+        - status
+        - online
+        - createdAt
+
+    CreateUserBody:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        role:
+          type: string
+      required:
+        - name
+        - email
+        - password
+        - role
+
+    UpdateUserBody:
+      type: object
+      properties:
+        name:
+          type: string
+        role:
+          type: string
+        status:
+          type: string
+        performanceScore:
+          type: ["number", "null"]
+
+    UpdateStatusBody:
+      type: object
+      properties:
+        online:
+          type: boolean
+      required:
+        - online
+
+    Client:
+      type: object
+      properties:
+        id:
+          type: integer
+        clientName:
+          type: string
+        phone:
+          type: string
+        business:
+          type: ["string", "null"]
+        website:
+          type: ["string", "null"]
+        planId:
+          type: ["integer", "null"]
+        addedBy:
+          type: ["integer", "null"]
+        assignedTo:
+          type: ["integer", "null"]
+        status:
+          type: string
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - clientName
+        - phone
+        - status
+        - createdAt
+
+    CreateClientBody:
+      type: object
+      properties:
+        clientName:
+          type: string
+        phone:
+          type: string
+        business:
+          type: string
+        website:
+          type: string
+        planId:
+          type: ["integer", "null"]
+        notes:
+          type: string
+      required:
+        - clientName
+        - phone
+
+    UpdateClientBody:
+      type: object
+      properties:
+        clientName:
+          type: string
+        phone:
+          type: string
+        business:
+          type: string
+        website:
+          type: string
+        planId:
+          type: ["integer", "null"]
+        assignedTo:
+          type: ["integer", "null"]
+        status:
+          type: string
+        notes:
+          type: string
+
+    Task:
+      type: object
+      properties:
+        id:
+          type: integer
+        clientId:
+          type: ["integer", "null"]
+        assignedTo:
+          type: ["integer", "null"]
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        priority:
+          type: string
+        status:
+          type: string
+        deadline:
+          type: ["string", "null"]
+        progress:
+          type: ["integer", "null"]
+        resultUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - title
+        - priority
+        - status
+        - createdAt
+
+    CreateTaskBody:
+      type: object
+      properties:
+        clientId:
+          type: ["integer", "null"]
+        assignedTo:
+          type: ["integer", "null"]
+        title:
+          type: string
+        description:
+          type: string
+        priority:
+          type: string
+        deadline:
+          type: ["string", "null"]
+      required:
+        - title
+        - priority
+
+    UpdateTaskBody:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        priority:
+          type: string
+        status:
+          type: string
+        assignedTo:
+          type: ["integer", "null"]
+        deadline:
+          type: ["string", "null"]
+        progress:
+          type: ["integer", "null"]
+        resultUrl:
+          type: string
+
+    Earning:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        amount:
+          type: number
+        type:
+          type: string
+        status:
+          type: string
+        description:
+          type: ["string", "null"]
+        taskId:
+          type: ["integer", "null"]
+        clientId:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - userId
+        - amount
+        - type
+        - status
+        - createdAt
+
+    CreateEarningBody:
+      type: object
+      properties:
+        userId:
+          type: integer
+        amount:
+          type: number
+        type:
+          type: string
+        description:
+          type: string
+        taskId:
+          type: ["integer", "null"]
+        clientId:
+          type: ["integer", "null"]
+      required:
+        - userId
+        - amount
+        - type
+
+    UpdateEarningBody:
+      type: object
+      properties:
+        status:
+          type: string
+        amount:
+          type: number
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: integer
+        senderId:
+          type: integer
+        receiverId:
+          type: ["integer", "null"]
+        isGroup:
+          type: boolean
+        content:
+          type: string
+        fileUrl:
+          type: ["string", "null"]
+        isPinned:
+          type: boolean
+        isRead:
+          type: boolean
+        createdAt:
+          type: string
+      required:
+        - id
+        - senderId
+        - isGroup
+        - content
+        - isPinned
+        - isRead
+        - createdAt
+
+    CreateMessageBody:
+      type: object
+      properties:
+        receiverId:
+          type: ["integer", "null"]
+        isGroup:
+          type: boolean
+        content:
+          type: string
+        fileUrl:
+          type: string
+      required:
+        - content
+        - isGroup
+
+    Plan:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        clientPrice:
+          type: number
+        salesmanCommission:
+          type: number
+        workerPayment:
+          type: number
+        description:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - clientPrice
+        - salesmanCommission
+        - workerPayment
+        - createdAt
+
+    CreatePlanBody:
+      type: object
+      properties:
+        name:
+          type: string
+        clientPrice:
+          type: number
+        salesmanCommission:
+          type: number
+        workerPayment:
+          type: number
+        description:
+          type: string
+      required:
+        - name
+        - clientPrice
+        - salesmanCommission
+        - workerPayment
+
+    UpdatePlanBody:
+      type: object
+      properties:
+        name:
+          type: string
+        clientPrice:
+          type: number
+        salesmanCommission:
+          type: number
+        workerPayment:
+          type: number
+        description:
+          type: string
+
+    DashboardStats:
+      type: object
+      properties:
+        totalRevenue:
+          type: number
+        revenueThisMonth:
+          type: number
+        totalEmployees:
+          type: integer
+        onlineEmployees:
+          type: integer
+        ongoingTasks:
+          type: integer
+        completedTasks:
+          type: integer
+        pendingApprovals:
+          type: integer
+        totalClients:
+          type: integer
+        newClientsThisMonth:
+          type: integer
+        totalSalaryOwed:
+          type: number
+        profit:
+          type: number
+      required:
+        - totalRevenue
+        - revenueThisMonth
+        - totalEmployees
+        - onlineEmployees
+        - ongoingTasks
+        - completedTasks
+        - pendingApprovals
+        - totalClients
+        - newClientsThisMonth
+        - totalSalaryOwed
+        - profit
+
+    RevenueByMonth:
+      type: object
+      properties:
+        month:
+          type: string
+        revenue:
+          type: number
+        salary:
+          type: number
+        profit:
+          type: number
+      required:
+        - month
+        - revenue
+        - salary
+        - profit
+
+    TopPerformers:
+      type: object
+      properties:
+        topSalesmen:
+          type: array
+          items:
+            $ref: "#/components/schemas/PerformerStat"
+        topWorkers:
+          type: array
+          items:
+            $ref: "#/components/schemas/PerformerStat"
+      required:
+        - topSalesmen
+        - topWorkers
+
+    PerformerStat:
+      type: object
+      properties:
+        userId:
+          type: integer
+        name:
+          type: string
+        count:
+          type: integer
+        totalEarnings:
+          type: number
+      required:
+        - userId
+        - name
+        - count
+        - totalEarnings
