@@ -1,5 +1,6 @@
 import { Link } from "wouter";
-import { ArrowRight, BarChart3, Globe, Search, Shield, Star, TrendingUp, Users, Zap, Mail, Phone, MapPin } from "lucide-react";
+import { ArrowRight, BarChart3, Globe, Search, Shield, Star, TrendingUp, Users, Zap, Mail, Phone, MapPin, Check, Rocket, Target, Crown } from "lucide-react";
+import { useListPlans } from "@/lib/db";
 
 const services = [
   { icon: Search, title: "SEO Optimization", desc: "Rank higher on Google with data-driven strategies, technical audits, and content optimization." },
@@ -17,7 +18,69 @@ const reasons = [
   { stat: "8 Yrs", label: "Industry Experience" },
 ];
 
+const PLAN_STYLES = [
+  {
+    gradient: "from-emerald-500/20 via-emerald-500/5 to-transparent",
+    border: "border-emerald-500/30",
+    badgeBg: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
+    checkColor: "text-emerald-400",
+    checkBg: "bg-emerald-500/15",
+    priceColor: "text-emerald-400",
+    btnClass: "bg-emerald-600 hover:bg-emerald-500",
+    icon: Rocket,
+    iconColor: "text-emerald-400",
+    iconBg: "bg-emerald-500/15",
+    glow: "shadow-emerald-500/10",
+    tag: "Starter",
+  },
+  {
+    gradient: "from-blue-500/20 via-blue-500/5 to-transparent",
+    border: "border-blue-500/30",
+    badgeBg: "bg-blue-500/15 text-blue-300 border-blue-500/30",
+    checkColor: "text-blue-400",
+    checkBg: "bg-blue-500/15",
+    priceColor: "text-blue-400",
+    btnClass: "bg-blue-600 hover:bg-blue-500",
+    icon: TrendingUp,
+    iconColor: "text-blue-400",
+    iconBg: "bg-blue-500/15",
+    glow: "shadow-blue-500/10",
+    tag: "Growth",
+  },
+  {
+    gradient: "from-violet-500/25 via-violet-500/10 to-transparent",
+    border: "border-violet-500/40",
+    badgeBg: "bg-violet-500/20 text-violet-200 border-violet-500/40",
+    checkColor: "text-violet-400",
+    checkBg: "bg-violet-500/15",
+    priceColor: "text-violet-300",
+    btnClass: "bg-violet-600 hover:bg-violet-500",
+    icon: Star,
+    iconColor: "text-violet-400",
+    iconBg: "bg-violet-500/20",
+    glow: "shadow-violet-500/20",
+    tag: "Pro",
+    highlight: true,
+  },
+  {
+    gradient: "from-red-500/20 via-red-500/5 to-transparent",
+    border: "border-red-500/30",
+    badgeBg: "bg-red-500/15 text-red-300 border-red-500/30",
+    checkColor: "text-red-400",
+    checkBg: "bg-red-500/15",
+    priceColor: "text-red-400",
+    btnClass: "bg-red-600 hover:bg-red-500",
+    icon: Crown,
+    iconColor: "text-red-400",
+    iconBg: "bg-red-500/15",
+    glow: "shadow-red-500/10",
+    tag: "Elite",
+  },
+];
+
 export default function HomePage() {
+  const { data: plans } = useListPlans();
+
   return (
     <div className="min-h-screen bg-[#09090f] text-white">
       {/* Nav */}
@@ -29,9 +92,9 @@ export default function HomePage() {
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm text-white/60">
             <a href="#services" className="hover:text-white transition-colors">Services</a>
+            <a href="#plans" className="hover:text-white transition-colors">Plans</a>
             <a href="#why-us" className="hover:text-white transition-colors">Why Us</a>
             <a href="#contact" className="hover:text-white transition-colors">Contact</a>
-            <a href="#careers" className="hover:text-white transition-colors">Careers</a>
           </div>
           <a href="#contact" className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg text-sm font-semibold transition-colors">
             Get Started
@@ -53,11 +116,11 @@ export default function HomePage() {
               Win Online.
             </h1>
             <p className="text-xl text-white/50 mb-10 max-w-xl leading-relaxed">
-              Prime Link delivers premium SEO services that drive real organic traffic, qualified leads, and measurable business growth.
+              Prime Link delivers premium Local SEO services for clinics, gyms, salons, restaurants, and all local businesses that want more customers.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <a href="#contact" className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-xl font-bold text-lg transition-colors">
-                Start Growing Now <ArrowRight className="h-5 w-5" />
+              <a href="#plans" className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-xl font-bold text-lg transition-colors">
+                View Our Plans <ArrowRight className="h-5 w-5" />
               </a>
               <a href="#services" className="inline-flex items-center gap-2 border border-white/10 hover:border-white/20 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-colors">
                 Explore Services
@@ -86,7 +149,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-black mb-4">Our Services</h2>
-            <p className="text-white/40 text-lg max-w-xl mx-auto">Full-stack SEO solutions tailored to your business goals</p>
+            <p className="text-white/40 text-lg max-w-xl mx-auto">Full-stack Local SEO solutions tailored to your business goals</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {services.map((s) => (
@@ -102,14 +165,110 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Plans */}
+      <section id="plans" className="py-24 px-6 bg-white/[0.015] border-y border-white/5">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 rounded-full px-4 py-1.5 text-sm text-blue-400 mb-4">
+              <Target className="h-3.5 w-3.5" />
+              Prime Link Local SEO Services
+            </div>
+            <h2 className="text-4xl md:text-5xl font-black mb-4">4 Powerful Plans</h2>
+            <p className="text-white/40 text-lg max-w-2xl mx-auto">
+              Designed for clinics, gyms, salons, restaurants, shops, and all local businesses that want more customers from their city/area.
+            </p>
+          </div>
+
+          {(plans ?? []).length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mt-14">
+              {(plans ?? []).map((plan, idx) => {
+                const style = PLAN_STYLES[idx % PLAN_STYLES.length];
+                const Icon = style.icon;
+                return (
+                  <div
+                    key={plan.id}
+                    className={`relative rounded-2xl border ${style.border} overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl ${style.glow} ${style.highlight ? "ring-1 ring-violet-500/40" : ""}`}
+                  >
+                    {/* Gradient header */}
+                    <div className={`bg-gradient-to-b ${style.gradient} p-6 pb-5`}>
+                      {plan.badge && (
+                        <div className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border mb-4 ${style.badgeBg}`}>
+                          <Star className="h-3 w-3" />
+                          {plan.badge}
+                        </div>
+                      )}
+                      <div className={`w-11 h-11 ${style.iconBg} rounded-xl flex items-center justify-center mb-4`}>
+                        <Icon className={`h-6 w-6 ${style.iconColor}`} />
+                      </div>
+                      <h3 className="text-xl font-black text-white mb-2">{plan.name}</h3>
+                      {plan.description && (
+                        <p className="text-white/40 text-xs leading-relaxed mb-5">{plan.description}</p>
+                      )}
+                      <div className="flex items-end gap-1">
+                        <span className="text-white/40 text-sm font-semibold">₹</span>
+                        <span className={`text-4xl font-black ${style.priceColor}`}>
+                          {plan.clientPrice.toLocaleString("en-IN")}
+                        </span>
+                      </div>
+                      <p className="text-white/30 text-xs mt-1">one-time plan</p>
+                    </div>
+
+                    {/* Features */}
+                    <div className="px-6 pb-6 bg-[#09090f]/60">
+                      {plan.features.length > 0 && (
+                        <div className="py-5 space-y-3 border-t border-white/5">
+                          {plan.features.map((feat, i) => (
+                            <div key={i} className="flex items-start gap-2.5">
+                              <div className={`w-4 h-4 ${style.checkBg} rounded-full flex items-center justify-center mt-0.5 shrink-0`}>
+                                <Check className={`h-2.5 w-2.5 ${style.checkColor}`} />
+                              </div>
+                              <span className="text-white/60 text-xs leading-relaxed">{feat}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <a
+                        href="#contact"
+                        className={`w-full flex items-center justify-center gap-2 ${style.btnClass} text-white py-3 rounded-xl font-bold text-sm transition-colors mt-2`}
+                      >
+                        Get Started <ArrowRight className="h-4 w-4" />
+                      </a>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mt-14">
+              {["Starter Plan\n₹5,999", "Growth Plan\n₹9,999", "Pro Plan\n₹12,999", "Elite Plan\n₹19,999"].map((p, i) => (
+                <div key={i} className={`rounded-2xl border ${PLAN_STYLES[i].border} bg-white/[0.02] p-6 animate-pulse`}>
+                  <div className="h-6 bg-white/5 rounded mb-4 w-24" />
+                  <div className="h-10 bg-white/5 rounded mb-6 w-32" />
+                  <div className="space-y-2">
+                    {[...Array(5)].map((_, j) => <div key={j} className="h-3 bg-white/5 rounded w-full" />)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="text-center mt-12">
+            <p className="text-white/30 text-sm">Not sure which plan is right for you?</p>
+            <a href="#contact" className="inline-flex items-center gap-2 mt-3 text-blue-400 hover:text-blue-300 text-sm font-semibold transition-colors">
+              Get a free consultation <ArrowRight className="h-4 w-4" />
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* Why Us */}
-      <section id="why-us" className="py-24 px-6 bg-white/[0.02] border-y border-white/5">
+      <section id="why-us" className="py-24 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
               <h2 className="text-4xl font-black mb-6">Why Choose Prime Link?</h2>
               <p className="text-white/50 text-lg mb-8 leading-relaxed">
-                We don't just run campaigns — we build data-driven growth systems that compound over time. Our team of SEO specialists becomes an extension of your business.
+                We don't just run campaigns — we build data-driven growth systems that compound over time.
               </p>
               <div className="space-y-4">
                 {[
@@ -147,48 +306,29 @@ export default function HomePage() {
       </section>
 
       {/* Contact */}
-      <section id="contact" className="py-24 px-6">
+      <section id="contact" className="py-24 px-6 bg-white/[0.02] border-t border-white/5">
         <div className="max-w-7xl mx-auto">
           <div className="max-w-2xl mx-auto text-center mb-12">
             <h2 className="text-4xl font-black mb-4">Let's Talk Growth</h2>
-            <p className="text-white/40 text-lg">Ready to dominate your market? Get a free SEO audit today.</p>
+            <p className="text-white/40 text-lg">Ready to dominate your local market? Get a free SEO audit today.</p>
           </div>
           <div className="max-w-xl mx-auto bg-white/[0.03] border border-white/5 rounded-2xl p-8">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
               <input type="text" placeholder="Your Name" className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500/50 placeholder:text-white/20 text-white" />
               <input type="email" placeholder="Email Address" className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500/50 placeholder:text-white/20 text-white" />
             </div>
-            <input type="text" placeholder="Your Website URL" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500/50 placeholder:text-white/20 text-white mb-4" />
-            <textarea rows={4} placeholder="Tell us about your goals..." className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500/50 placeholder:text-white/20 text-white mb-4 resize-none" />
+            <input type="text" placeholder="Your Business Name" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500/50 placeholder:text-white/20 text-white mb-4" />
+            <input type="text" placeholder="Phone Number" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500/50 placeholder:text-white/20 text-white mb-4" />
+            <textarea rows={3} placeholder="Tell us about your business and goals..." className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500/50 placeholder:text-white/20 text-white mb-4 resize-none" />
             <button className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold transition-colors">
               Request Free Audit
             </button>
           </div>
           <div className="flex flex-col md:flex-row items-center justify-center gap-8 mt-12 text-white/30 text-sm">
             <div className="flex items-center gap-2"><Mail className="h-4 w-4" />contact@primelink.io</div>
-            <div className="flex items-center gap-2"><Phone className="h-4 w-4" />+1 (800) PRIME-01</div>
-            <div className="flex items-center gap-2"><MapPin className="h-4 w-4" />New York, NY</div>
+            <div className="flex items-center gap-2"><Phone className="h-4 w-4" />+91 99999 00000</div>
+            <div className="flex items-center gap-2"><MapPin className="h-4 w-4" />India</div>
           </div>
-        </div>
-      </section>
-
-      {/* Careers */}
-      <section id="careers" className="py-24 px-6 border-t border-white/5 bg-white/[0.02]">
-        <div className="max-w-7xl mx-auto text-center">
-          <h2 className="text-4xl font-black mb-4">Join Our Team</h2>
-          <p className="text-white/40 text-lg mb-8 max-w-xl mx-auto">We're always looking for talented SEO specialists, content writers, and digital marketers to join our growing team.</p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto mb-10">
-            {["SEO Specialist", "Content Strategist", "Account Manager"].map((role) => (
-              <div key={role} className="bg-white/[0.04] border border-white/5 rounded-xl p-6">
-                <h3 className="font-bold mb-2">{role}</h3>
-                <p className="text-white/30 text-sm mb-4">Remote • Full-time</p>
-                <span className="text-xs bg-blue-500/10 text-blue-400 px-3 py-1 rounded-full border border-blue-500/20">Now Hiring</span>
-              </div>
-            ))}
-          </div>
-          <a href="mailto:careers@primelink.io" className="inline-flex items-center gap-2 border border-white/10 hover:border-blue-500/30 text-white px-8 py-3 rounded-xl font-semibold transition-colors">
-            Send Your Resume <ArrowRight className="h-4 w-4" />
-          </a>
         </div>
       </section>
 
@@ -199,7 +339,7 @@ export default function HomePage() {
             <span className="font-black text-white">PRIME LINK</span>
             <span className="font-black text-blue-500"> OS</span>
           </div>
-          <p className="text-white/20 text-sm">2024 Prime Link. All rights reserved.</p>
+          <p className="text-white/20 text-sm">© 2024 Prime Link. All rights reserved.</p>
         </div>
       </footer>
     </div>

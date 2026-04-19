@@ -29,8 +29,16 @@ create table if not exists plans (
   salesman_commission numeric not null,
   worker_payment numeric not null,
   description text,
+  features text[] not null default '{}',
+  badge text,
+  sort_order integer not null default 0,
   created_at timestamptz default now() not null
 );
+
+-- Add new columns if upgrading existing database
+alter table plans add column if not exists features text[] not null default '{}';
+alter table plans add column if not exists badge text;
+alter table plans add column if not exists sort_order integer not null default 0;
 
 -- ─── Clients Table ───────────────────────────────────────────
 create table if not exists clients (
@@ -84,7 +92,6 @@ create table if not exists messages (
 );
 
 -- ─── Disable Row Level Security ───────────────────────────────
--- (Using custom auth — no Supabase Auth sessions)
 alter table users disable row level security;
 alter table plans disable row level security;
 alter table clients disable row level security;
@@ -99,8 +106,6 @@ alter publication supabase_realtime add table tasks;
 alter publication supabase_realtime add table clients;
 
 -- ─── Seed: Default Admin Account ─────────────────────────────
--- Password: Admin@PrimeLink2024
--- SHA-256 hash of "Admin@PrimeLink2024"
 insert into users (name, email, password_hash, role, status)
 values (
   'Prime Link Admin',
@@ -110,10 +115,33 @@ values (
   'active'
 ) on conflict (email) do nothing;
 
--- ─── Seed: Sample Plans ───────────────────────────────────────
-insert into plans (name, client_price, salesman_commission, worker_payment, description)
+-- ─── Remove old sample plans and insert new ones ─────────────
+delete from plans where name in ('Starter SEO', 'Growth SEO', 'Enterprise SEO');
+
+insert into plans (name, client_price, salesman_commission, worker_payment, description, badge, sort_order, features)
 values
-  ('Starter SEO', 499, 75, 150, 'Basic SEO optimization for small businesses'),
-  ('Growth SEO', 999, 150, 300, 'Comprehensive SEO with content strategy'),
-  ('Enterprise SEO', 2499, 350, 750, 'Full-service SEO for large businesses and e-commerce')
+  (
+    'Starter Plan', 5999, 700, 1200,
+    'Best for new businesses or small local businesses starting online growth.',
+    null, 1,
+    ARRAY['Google Business Profile basic optimization','Business information setup (name, address, phone, timing)','Primary keyword targeting','Basic local keyword research','5 business directory submissions','Basic on-page SEO suggestions','Map visibility improvement basics','1 month support']
+  ),
+  (
+    'Growth Plan', 9999, 1200, 2000,
+    'Best for running businesses wanting more calls, visits, and leads.',
+    null, 2,
+    ARRAY['Everything in Starter Plan','Advanced Google Business Profile optimization','15 local keyword targets','Competitor local SEO analysis','15 directory/citation submissions','Review strategy guidance','Local content suggestions','Website local SEO improvements','Monthly ranking report','Priority support']
+  ),
+  (
+    'Pro Plan', 12999, 1600, 2600,
+    'Best for businesses wanting strong local growth and faster results.',
+    'Most Popular', 3,
+    ARRAY['Everything in Growth Plan','Premium Google Maps ranking strategy','25 keyword targets','Advanced competitor gap analysis','25 high-quality citations','Review growth strategy + templates','Geo-targeted content plan','Advanced website local SEO fixes','Conversion optimization suggestions','Stronger map pack strategy','Dedicated support','Detailed monthly report']
+  ),
+  (
+    'Elite Plan', 19999, 2400, 4000,
+    'Best for serious businesses wanting maximum local dominance.',
+    'Maximum Growth', 4,
+    ARRAY['Everything in Pro Plan','Aggressive local ranking strategy','50 keyword targets','Multi-location SEO support (if needed)','Premium citation campaign','Reputation management strategy','High-conversion landing page guidance','Full local SEO audit + fixes roadmap','Competitor takeover strategy','Highest priority support','Weekly progress updates','VIP consultation calls']
+  )
 on conflict do nothing;

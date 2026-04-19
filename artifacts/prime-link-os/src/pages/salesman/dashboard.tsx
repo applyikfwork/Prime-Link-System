@@ -1,13 +1,20 @@
 import { useListClients, useListEarnings, useListPlans } from "@/lib/db";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
-import { UserSquare, DollarSign, TrendingUp, Plus, Building2, ArrowRight, Clock } from "lucide-react";
+import { UserSquare, DollarSign, TrendingUp, Plus, Building2, ArrowRight, Clock, IndianRupee, Briefcase } from "lucide-react";
 
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-500/10 text-yellow-400",
   active: "bg-blue-500/10 text-blue-400",
   completed: "bg-emerald-500/10 text-emerald-400",
 };
+
+const PLAN_COLORS = [
+  { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/20" },
+  { bg: "bg-blue-500/10", text: "text-blue-400", border: "border-blue-500/20" },
+  { bg: "bg-violet-500/10", text: "text-violet-400", border: "border-violet-500/20" },
+  { bg: "bg-red-500/10", text: "text-red-400", border: "border-red-500/20" },
+];
 
 export default function SalesmanDashboard() {
   const { user } = useAuth();
@@ -17,15 +24,11 @@ export default function SalesmanDashboard() {
 
   const myClients = (allClients ?? []).filter((c) => c.addedBy === user?.id);
   const myEarnings = (earnings ?? []).filter((e) => e.userId === user?.id);
-  const totalEarned = myEarnings
-    .filter((e) => e.status === "completed")
-    .reduce((s, e) => s + e.amount, 0);
-  const pendingEarnings = myEarnings
-    .filter((e) => e.status === "pending")
-    .reduce((s, e) => s + e.amount, 0);
+  const totalEarned = myEarnings.filter((e) => e.status === "completed").reduce((s, e) => s + e.amount, 0);
+  const pendingEarnings = myEarnings.filter((e) => e.status === "pending").reduce((s, e) => s + e.amount, 0);
 
-  const getPlanName = (id: string | null | undefined) =>
-    plans?.find((p) => p.id === id)?.name ?? "—";
+  const getPlanName = (id: string | null | undefined) => plans?.find((p) => p.id === id)?.name ?? "—";
+  const sortedPlans = [...(plans ?? [])].sort((a, b) => a.sortOrder - b.sortOrder);
 
   return (
     <div className="space-y-8">
@@ -42,22 +45,63 @@ export default function SalesmanDashboard() {
         </div>
         <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-5">
           <TrendingUp className="h-5 w-5 text-emerald-400 mb-3" />
-          <div className="text-2xl font-black text-white">
-            {myClients.filter((c) => c.status === "active").length}
-          </div>
+          <div className="text-2xl font-black text-white">{myClients.filter((c) => c.status === "active").length}</div>
           <div className="text-xs text-white/30 mt-1">Active Clients</div>
         </div>
         <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-5">
           <DollarSign className="h-5 w-5 text-emerald-400 mb-3" />
-          <div className="text-2xl font-black text-white">${totalEarned.toFixed(0)}</div>
+          <div className="text-2xl font-black text-white">₹{totalEarned.toLocaleString("en-IN")}</div>
           <div className="text-xs text-white/30 mt-1">Total Earned</div>
         </div>
         <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-5">
           <Clock className="h-5 w-5 text-yellow-400 mb-3" />
-          <div className="text-2xl font-black text-white">${pendingEarnings.toFixed(0)}</div>
+          <div className="text-2xl font-black text-white">₹{pendingEarnings.toLocaleString("en-IN")}</div>
           <div className="text-xs text-white/30 mt-1">Pending Payout</div>
         </div>
       </div>
+
+      {/* Plan Earnings Reference */}
+      {sortedPlans.length > 0 && (
+        <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-6">
+          <div className="flex items-center gap-2 mb-5">
+            <IndianRupee className="h-4 w-4 text-blue-400" />
+            <h2 className="text-base font-bold text-white">Your Commission Per Plan</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+            {sortedPlans.map((plan, idx) => {
+              const color = PLAN_COLORS[idx % PLAN_COLORS.length];
+              const clientsOnPlan = myClients.filter((c) => c.planId === plan.id).length;
+              return (
+                <div key={plan.id} className={`relative rounded-xl border ${color.border} ${color.bg} p-4`}>
+                  {plan.badge && (
+                    <span className={`text-xs font-bold ${color.text} mb-2 block`}>⭐ {plan.badge}</span>
+                  )}
+                  <div className="flex items-start gap-2 mb-3">
+                    <Briefcase className={`h-4 w-4 ${color.text} mt-0.5 shrink-0`} />
+                    <span className="text-sm font-bold text-white">{plan.name}</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-white/30">Client Pays</span>
+                      <span className="text-xs font-bold text-white/60">₹{plan.clientPrice.toLocaleString("en-IN")}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-white/30">You Earn</span>
+                      <span className={`text-sm font-black ${color.text}`}>₹{plan.salesmanCommission.toLocaleString("en-IN")}</span>
+                    </div>
+                    {clientsOnPlan > 0 && (
+                      <div className="flex items-center justify-between pt-1.5 border-t border-white/10 mt-1.5">
+                        <span className="text-xs text-white/30">My Clients</span>
+                        <span className="text-xs font-bold text-white">{clientsOnPlan}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-white/[0.03] border border-white/5 rounded-2xl p-6">
@@ -98,16 +142,12 @@ export default function SalesmanDashboard() {
                   <p className="text-xs text-white/20">{new Date(e.createdAt).toLocaleDateString()}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-bold text-white">${e.amount.toFixed(0)}</p>
-                  <p className={`text-xs capitalize ${e.status === "completed" ? "text-emerald-400" : "text-yellow-400"}`}>
-                    {e.status}
-                  </p>
+                  <p className="text-sm font-bold text-white">₹{e.amount.toLocaleString("en-IN")}</p>
+                  <p className={`text-xs capitalize ${e.status === "completed" ? "text-emerald-400" : "text-yellow-400"}`}>{e.status}</p>
                 </div>
               </div>
             ))}
-            {myEarnings.length === 0 && (
-              <p className="text-white/20 text-sm">No earnings yet</p>
-            )}
+            {myEarnings.length === 0 && <p className="text-white/20 text-sm">No earnings yet</p>}
           </div>
           <Link href="/salesman/earnings" className="flex items-center justify-center gap-1.5 mt-4 text-xs text-white/30 hover:text-white transition-colors">
             View All <ArrowRight className="h-3 w-3" />

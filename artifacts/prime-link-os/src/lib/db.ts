@@ -50,6 +50,9 @@ export type Plan = {
   salesmanCommission: number;
   workerPayment: number;
   description: string | null;
+  features: string[];
+  badge: string | null;
+  sortOrder: number;
   createdAt: string;
 };
 
@@ -178,6 +181,9 @@ function mapPlan(r: any): Plan {
     salesmanCommission: Number(r.salesman_commission),
     workerPayment: Number(r.worker_payment),
     description: r.description ?? null,
+    features: Array.isArray(r.features) ? r.features : [],
+    badge: r.badge ?? null,
+    sortOrder: Number(r.sort_order ?? 0),
     createdAt: r.created_at,
   };
 }
@@ -498,7 +504,7 @@ export function useListPlans() {
       const { data, error } = await supabase
         .from("plans")
         .select("*")
-        .order("created_at", { ascending: true });
+        .order("sort_order", { ascending: true });
       if (error) throw error;
       return (data ?? []).map(mapPlan);
     },
@@ -517,6 +523,9 @@ export function useCreatePlan() {
         salesmanCommission: number;
         workerPayment: number;
         description?: string;
+        features?: string[];
+        badge?: string | null;
+        sortOrder?: number;
       };
     }) => {
       const { data: row, error } = await supabase
@@ -527,6 +536,9 @@ export function useCreatePlan() {
           salesman_commission: data.salesmanCommission,
           worker_payment: data.workerPayment,
           description: data.description?.trim() || null,
+          features: data.features ?? [],
+          badge: data.badge ?? null,
+          sort_order: data.sortOrder ?? 0,
         })
         .select()
         .single();
@@ -551,6 +563,9 @@ export function useUpdatePlan() {
         salesmanCommission: number;
         workerPayment: number;
         description: string;
+        features: string[];
+        badge: string | null;
+        sortOrder: number;
       }>;
     }) => {
       const updates: Record<string, unknown> = {};
@@ -559,6 +574,9 @@ export function useUpdatePlan() {
       if (data.salesmanCommission !== undefined) updates.salesman_commission = data.salesmanCommission;
       if (data.workerPayment !== undefined) updates.worker_payment = data.workerPayment;
       if (data.description !== undefined) updates.description = data.description;
+      if (data.features !== undefined) updates.features = data.features;
+      if ("badge" in data) updates.badge = data.badge;
+      if (data.sortOrder !== undefined) updates.sort_order = data.sortOrder;
       const { error } = await supabase.from("plans").update(updates).eq("id", id);
       if (error) throw error;
     },

@@ -1,8 +1,8 @@
-import { useListTasks, useUpdateTask, useListEarnings, getListTasksQueryKey } from "@/lib/db";
+import { useListTasks, useUpdateTask, useListEarnings, useListPlans, getListTasksQueryKey } from "@/lib/db";
 import { useAuth } from "@/hooks/use-auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { CheckSquare, Clock, Play, DollarSign, AlertTriangle } from "lucide-react";
+import { CheckSquare, Clock, Play, DollarSign, AlertTriangle, IndianRupee, Briefcase, Wrench } from "lucide-react";
 
 const priorityConfig: Record<string, { dot: string; color: string }> = {
   urgent: { dot: "bg-red-500", color: "text-red-400" },
@@ -11,10 +11,18 @@ const priorityConfig: Record<string, { dot: string; color: string }> = {
   delayed: { dot: "bg-gray-600", color: "text-gray-400" },
 };
 
+const PLAN_COLORS = [
+  { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/20" },
+  { bg: "bg-blue-500/10", text: "text-blue-400", border: "border-blue-500/20" },
+  { bg: "bg-violet-500/10", text: "text-violet-400", border: "border-violet-500/20" },
+  { bg: "bg-red-500/10", text: "text-red-400", border: "border-red-500/20" },
+];
+
 export default function WorkerDashboard() {
   const { user } = useAuth();
   const { data: allTasks } = useListTasks({});
   const { data: earnings } = useListEarnings({});
+  const { data: plans } = useListPlans();
   const updateTask = useUpdateTask();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -26,27 +34,19 @@ export default function WorkerDashboard() {
   const inProgress = myTasks.filter((t) => t.status === "in_progress");
   const completed = myTasks.filter((t) => t.status === "completed" || t.status === "approved");
 
-  const totalEarned = myEarnings
-    .filter((e) => e.status === "completed")
-    .reduce((s, e) => s + e.amount, 0);
-  const pendingPay = myEarnings
-    .filter((e) => e.status === "pending")
-    .reduce((s, e) => s + e.amount, 0);
+  const totalEarned = myEarnings.filter((e) => e.status === "completed").reduce((s, e) => s + e.amount, 0);
+  const pendingPay = myEarnings.filter((e) => e.status === "pending").reduce((s, e) => s + e.amount, 0);
+
+  const sortedPlans = [...(plans ?? [])].sort((a, b) => a.sortOrder - b.sortOrder);
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: getListTasksQueryKey({}) });
 
   const handleStart = (id: string) => {
-    updateTask.mutate(
-      { id, data: { status: "in_progress", progress: 10 } },
-      { onSuccess: () => { invalidate(); toast({ title: "Task started!" }); } }
-    );
+    updateTask.mutate({ id, data: { status: "in_progress", progress: 10 } }, { onSuccess: () => { invalidate(); toast({ title: "Task started!" }); } });
   };
 
   const handleComplete = (id: string) => {
-    updateTask.mutate(
-      { id, data: { status: "completed", progress: 100 } },
-      { onSuccess: () => { invalidate(); toast({ title: "Task marked as complete!" }); } }
-    );
+    updateTask.mutate({ id, data: { status: "completed", progress: 100 } }, { onSuccess: () => { invalidate(); toast({ title: "Task marked as complete!" }); } });
   };
 
   return (
@@ -74,10 +74,46 @@ export default function WorkerDashboard() {
         </div>
         <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-5">
           <DollarSign className="h-5 w-5 text-emerald-400 mb-3" />
-          <div className="text-2xl font-black text-white">${totalEarned.toFixed(0)}</div>
-          <div className="text-xs text-white/30 mt-1">Earned (${pendingPay.toFixed(0)} pending)</div>
+          <div className="text-2xl font-black text-white">₹{totalEarned.toLocaleString("en-IN")}</div>
+          <div className="text-xs text-white/30 mt-1">Earned (₹{pendingPay.toLocaleString("en-IN")} pending)</div>
         </div>
       </div>
+
+      {/* Plan Payment Reference */}
+      {sortedPlans.length > 0 && (
+        <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-6">
+          <div className="flex items-center gap-2 mb-5">
+            <Wrench className="h-4 w-4 text-violet-400" />
+            <h2 className="text-base font-bold text-white">Your Payment Per Plan Completed</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+            {sortedPlans.map((plan, idx) => {
+              const color = PLAN_COLORS[idx % PLAN_COLORS.length];
+              return (
+                <div key={plan.id} className={`rounded-xl border ${color.border} ${color.bg} p-4`}>
+                  {plan.badge && (
+                    <span className={`text-xs font-bold ${color.text} mb-2 block`}>⭐ {plan.badge}</span>
+                  )}
+                  <div className="flex items-start gap-2 mb-3">
+                    <Briefcase className={`h-4 w-4 ${color.text} mt-0.5 shrink-0`} />
+                    <span className="text-sm font-bold text-white">{plan.name}</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-white/30">Client Pays</span>
+                      <span className="text-xs font-bold text-white/60">₹{plan.clientPrice.toLocaleString("en-IN")}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-white/30">You Earn</span>
+                      <span className={`text-sm font-black ${color.text}`}>₹{plan.workerPayment.toLocaleString("en-IN")}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {inProgress.length > 0 && (
         <div>
@@ -93,23 +129,15 @@ export default function WorkerDashboard() {
                         <div className={`w-2 h-2 rounded-full ${p.dot}`} />
                         <p className="font-semibold text-white">{task.title}</p>
                       </div>
-                      {task.description && (
-                        <p className="text-xs text-white/30 mb-3">{task.description}</p>
-                      )}
+                      {task.description && <p className="text-xs text-white/30 mb-3">{task.description}</p>}
                       <div className="flex items-center gap-2">
                         <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-blue-500 rounded-full"
-                            style={{ width: `${task.progress ?? 0}%` }}
-                          />
+                          <div className="h-full bg-blue-500 rounded-full" style={{ width: `${task.progress ?? 0}%` }} />
                         </div>
                         <span className="text-xs text-white/40">{task.progress ?? 0}%</span>
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleComplete(task.id)}
-                      className="text-xs bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 px-3 py-2 rounded-lg transition-colors shrink-0"
-                    >
+                    <button onClick={() => handleComplete(task.id)} className="text-xs bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 px-3 py-2 rounded-lg transition-colors shrink-0">
                       Mark Complete
                     </button>
                   </div>
@@ -134,19 +162,10 @@ export default function WorkerDashboard() {
                         <div className={`w-2 h-2 rounded-full ${p.dot}`} />
                         <p className="font-semibold text-white">{task.title}</p>
                       </div>
-                      {task.description && (
-                        <p className="text-xs text-white/30">{task.description}</p>
-                      )}
-                      {task.deadline && (
-                        <p className="text-xs text-yellow-400/60 mt-1">
-                          Due: {new Date(task.deadline).toLocaleDateString()}
-                        </p>
-                      )}
+                      {task.description && <p className="text-xs text-white/30">{task.description}</p>}
+                      {task.deadline && <p className="text-xs text-yellow-400/60 mt-1">Due: {new Date(task.deadline).toLocaleDateString()}</p>}
                     </div>
-                    <button
-                      onClick={() => handleStart(task.id)}
-                      className="flex items-center gap-1.5 text-xs bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 px-3 py-2 rounded-lg transition-colors shrink-0"
-                    >
+                    <button onClick={() => handleStart(task.id)} className="flex items-center gap-1.5 text-xs bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 px-3 py-2 rounded-lg transition-colors shrink-0">
                       <Play className="h-3 w-3" /> Start
                     </button>
                   </div>
