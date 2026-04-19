@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useListPlans, useCreatePlan, useUpdatePlan, useDeletePlan, getListPlansQueryKey, type Plan } from "@/lib/db";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Edit2, X, Check, Briefcase, IndianRupee, User, Wrench, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Trash2, Edit2, X, Check, Briefcase, IndianRupee, User, Wrench, ChevronDown, ChevronUp, Library, ArrowUp, ArrowDown } from "lucide-react";
 
 const PLAN_COLORS = [
   { border: "border-emerald-500/30", bg: "bg-emerald-500/10", text: "text-emerald-400", dot: "bg-emerald-500" },
@@ -27,13 +27,30 @@ export default function AdminPlans() {
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: getListPlansQueryKey() });
 
+  const allLibraryFeatures = Array.from(
+    new Set((plans ?? []).flatMap((p) => p.features).filter(Boolean))
+  );
+
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
-    const data = { name: form.name, clientPrice: parseFloat(form.clientPrice), salesmanCommission: parseFloat(form.salesmanCommission), workerPayment: parseFloat(form.workerPayment), description: form.description, badge: form.badge || null, sortOrder: form.sortOrder ? parseInt(form.sortOrder) : 0, features: form.features };
+    const data = {
+      name: form.name,
+      clientPrice: parseFloat(form.clientPrice),
+      salesmanCommission: parseFloat(form.salesmanCommission),
+      workerPayment: parseFloat(form.workerPayment),
+      description: form.description,
+      badge: form.badge || null,
+      sortOrder: form.sortOrder ? parseInt(form.sortOrder) : 0,
+      features: form.features,
+    };
     if (editId) {
-      updatePlan.mutate({ id: editId, data }, { onSuccess: () => { setEditId(null); setShowForm(false); setForm(emptyForm); invalidate(); toast({ title: "Plan updated" }); } });
+      updatePlan.mutate({ id: editId, data }, {
+        onSuccess: () => { setEditId(null); setShowForm(false); setForm(emptyForm); invalidate(); toast({ title: "Plan updated" }); },
+      });
     } else {
-      createPlan.mutate({ data }, { onSuccess: () => { setShowForm(false); setForm(emptyForm); invalidate(); toast({ title: "Plan created" }); } });
+      createPlan.mutate({ data }, {
+        onSuccess: () => { setShowForm(false); setForm(emptyForm); invalidate(); toast({ title: "Plan created" }); },
+      });
     }
   };
 
@@ -48,22 +65,39 @@ export default function AdminPlans() {
     deletePlan.mutate({ id }, { onSuccess: () => { invalidate(); toast({ title: "Plan deleted" }); } });
   };
 
-  const addFeature = () => {
-    const val = form.featureInput.trim();
-    if (!val) return;
-    setForm(f => ({ ...f, features: [...f.features, val], featureInput: "" }));
+  const addFeature = (val?: string) => {
+    const value = (val ?? form.featureInput).trim();
+    if (!value || form.features.includes(value)) return;
+    setForm((f) => ({ ...f, features: [...f.features, value], featureInput: "" }));
+  };
+
+  const handleMoveOrder = (plan: Plan, dir: "up" | "down") => {
+    const sorted = [...(plans ?? [])].sort((a, b) => a.sortOrder - b.sortOrder);
+    const idx = sorted.findIndex((p) => p.id === plan.id);
+    const swapIdx = dir === "up" ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= sorted.length) return;
+    const swapPlan = sorted[swapIdx];
+    const origOrder = plan.sortOrder;
+    const swapOrder = swapPlan.sortOrder;
+    updatePlan.mutate({ id: plan.id, data: { sortOrder: swapOrder } }, {
+      onSuccess: () => {
+        updatePlan.mutate({ id: swapPlan.id, data: { sortOrder: origOrder } }, { onSuccess: invalidate });
+      },
+    });
   };
 
   const sorted = [...(plans ?? [])].sort((a, b) => a.sortOrder - b.sortOrder);
 
-  if (isLoading) return <div className="space-y-3">{[...Array(4)].map((_, i) => <div key={i} className="h-32 bg-white/5 rounded-2xl animate-pulse" />)}</div>;
+  if (isLoading) return (
+    <div className="space-y-3">{[...Array(4)].map((_, i) => <div key={i} className="h-32 bg-white/5 rounded-2xl animate-pulse" />)}</div>
+  );
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black text-white">Service Plans</h1>
-          <p className="text-white/30 text-sm mt-1">{(plans ?? []).length} plans configured</p>
+          <p className="text-white/30 text-sm mt-1">{(plans ?? []).length} plans · Use ↑↓ arrows to control display order on home page</p>
         </div>
         <button onClick={() => { setEditId(null); setForm(emptyForm); setShowForm(true); }} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors">
           <Plus className="h-4 w-4" /> New Plan
@@ -76,48 +110,94 @@ export default function AdminPlans() {
             <h2 className="font-bold text-white text-lg">{editId ? "Edit Plan" : "New Plan"}</h2>
             <button onClick={() => { setShowForm(false); setEditId(null); }}><X className="h-4 w-4 text-white/40" /></button>
           </div>
-          <form onSubmit={handleCreate} className="space-y-4">
+          <form onSubmit={handleCreate} className="space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Plan Name (e.g. Starter Plan)" required className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500/50 placeholder:text-white/20" />
-              <input value={form.badge} onChange={e => setForm(f => ({ ...f, badge: e.target.value }))} placeholder='Badge (e.g. "Most Popular") — optional' className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500/50 placeholder:text-white/20" />
+              <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="Plan Name (e.g. Starter Plan)" required className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500/50 placeholder:text-white/20" />
+              <input value={form.badge} onChange={(e) => setForm((f) => ({ ...f, badge: e.target.value }))} placeholder='Badge label (e.g. "Most Popular") — optional' className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500/50 placeholder:text-white/20" />
             </div>
-            <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Short description..." className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500/50 placeholder:text-white/20 resize-none" rows={2} />
+            <textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Short description shown on home page..." className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500/50 placeholder:text-white/20 resize-none" rows={2} />
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="relative">
                 <IndianRupee className="absolute left-3 top-3.5 h-4 w-4 text-white/20" />
-                <input value={form.clientPrice} onChange={e => setForm(f => ({ ...f, clientPrice: e.target.value }))} type="number" step="1" placeholder="Client Price" required className="w-full bg-white/5 border border-emerald-500/20 rounded-xl pl-9 pr-4 py-3 text-white text-sm focus:outline-none focus:border-emerald-500/50 placeholder:text-white/20" />
+                <input value={form.clientPrice} onChange={(e) => setForm((f) => ({ ...f, clientPrice: e.target.value }))} type="number" step="1" placeholder="Client Price" required className="w-full bg-white/5 border border-emerald-500/20 rounded-xl pl-9 pr-16 py-3 text-white text-sm focus:outline-none focus:border-emerald-500/50 placeholder:text-white/20" />
                 <span className="absolute right-3 top-3.5 text-xs text-emerald-400/60">Client</span>
               </div>
               <div className="relative">
                 <IndianRupee className="absolute left-3 top-3.5 h-4 w-4 text-white/20" />
-                <input value={form.salesmanCommission} onChange={e => setForm(f => ({ ...f, salesmanCommission: e.target.value }))} type="number" step="1" placeholder="Salesman Earns" required className="w-full bg-white/5 border border-blue-500/20 rounded-xl pl-9 pr-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500/50 placeholder:text-white/20" />
+                <input value={form.salesmanCommission} onChange={(e) => setForm((f) => ({ ...f, salesmanCommission: e.target.value }))} type="number" step="1" placeholder="Salesman Earns" required className="w-full bg-white/5 border border-blue-500/20 rounded-xl pl-9 pr-20 py-3 text-white text-sm focus:outline-none focus:border-blue-500/50 placeholder:text-white/20" />
                 <span className="absolute right-3 top-3.5 text-xs text-blue-400/60">Salesman</span>
               </div>
               <div className="relative">
                 <IndianRupee className="absolute left-3 top-3.5 h-4 w-4 text-white/20" />
-                <input value={form.workerPayment} onChange={e => setForm(f => ({ ...f, workerPayment: e.target.value }))} type="number" step="1" placeholder="Worker Earns" required className="w-full bg-white/5 border border-violet-500/20 rounded-xl pl-9 pr-4 py-3 text-white text-sm focus:outline-none focus:border-violet-500/50 placeholder:text-white/20" />
+                <input value={form.workerPayment} onChange={(e) => setForm((f) => ({ ...f, workerPayment: e.target.value }))} type="number" step="1" placeholder="Worker Earns" required className="w-full bg-white/5 border border-violet-500/20 rounded-xl pl-9 pr-16 py-3 text-white text-sm focus:outline-none focus:border-violet-500/50 placeholder:text-white/20" />
                 <span className="absolute right-3 top-3.5 text-xs text-violet-400/60">Worker</span>
               </div>
             </div>
-            <input value={form.sortOrder} onChange={e => setForm(f => ({ ...f, sortOrder: e.target.value }))} type="number" placeholder="Display Order (1, 2, 3...)" className="w-full sm:w-48 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500/50 placeholder:text-white/20" />
-            <div>
-              <p className="text-xs text-white/40 uppercase tracking-wider mb-2 font-semibold">Services Included</p>
-              <div className="flex gap-2 mb-3">
-                <input value={form.featureInput} onChange={e => setForm(f => ({ ...f, featureInput: e.target.value }))} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addFeature(); } }} placeholder="Type a service and press Enter..." className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500/50 placeholder:text-white/20" />
-                <button type="button" onClick={addFeature} className="bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/20 text-blue-400 px-4 py-2 rounded-xl text-sm font-semibold transition-colors">Add</button>
+
+            {/* Service Library */}
+            <div className="border border-white/5 rounded-2xl p-5 bg-white/[0.02]">
+              <div className="flex items-center gap-2 mb-4">
+                <Library className="h-4 w-4 text-blue-400" />
+                <p className="text-sm font-bold text-white">Services Included in This Plan</p>
               </div>
-              <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                {form.features.map((feat, i) => (
-                  <div key={i} className="flex items-center gap-2 bg-white/[0.03] rounded-lg px-3 py-2 group">
-                    <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                    <span className="text-sm text-white/70 flex-1">{feat}</span>
-                    <button type="button" onClick={() => setForm(f => ({ ...f, features: f.features.filter((_, idx) => idx !== i) }))} className="opacity-0 group-hover:opacity-100 hover:text-red-400 text-white/30 transition-all"><X className="h-3.5 w-3.5" /></button>
+
+              {allLibraryFeatures.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-xs text-white/30 mb-2 uppercase tracking-wider">Quick-add from service library (tap to add/remove):</p>
+                  <div className="flex flex-wrap gap-2">
+                    {allLibraryFeatures.map((feat) => {
+                      const already = form.features.includes(feat);
+                      return (
+                        <button
+                          key={feat}
+                          type="button"
+                          onClick={() => {
+                            if (already) {
+                              setForm((f) => ({ ...f, features: f.features.filter((x) => x !== feat) }));
+                            } else {
+                              addFeature(feat);
+                            }
+                          }}
+                          className={`text-xs px-3 py-1.5 rounded-full border transition-all ${
+                            already
+                              ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
+                              : "bg-white/[0.03] border-white/10 text-white/40 hover:bg-blue-500/10 hover:border-blue-500/20 hover:text-blue-300"
+                          }`}
+                        >
+                          {already ? <span className="flex items-center gap-1"><Check className="h-2.5 w-2.5" />{feat}</span> : feat}
+                        </button>
+                      );
+                    })}
                   </div>
-                ))}
-                {form.features.length === 0 && <p className="text-white/20 text-xs py-2 px-3">No services added yet</p>}
+                </div>
+              )}
+
+              <div className="flex gap-2 mb-3">
+                <input
+                  value={form.featureInput}
+                  onChange={(e) => setForm((f) => ({ ...f, featureInput: e.target.value }))}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addFeature(); } }}
+                  placeholder="Type a new service and press Enter to add..."
+                  className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500/50 placeholder:text-white/20"
+                />
+                <button type="button" onClick={() => addFeature()} className="bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/20 text-blue-400 px-4 py-2 rounded-xl text-sm font-semibold transition-colors">Add</button>
               </div>
+
+              {form.features.length > 0 && (
+                <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                  {form.features.map((feat, i) => (
+                    <div key={i} className="flex items-center gap-2 bg-white/[0.03] rounded-lg px-3 py-2 group">
+                      <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                      <span className="text-sm text-white/70 flex-1">{feat}</span>
+                      <button type="button" onClick={() => setForm((f) => ({ ...f, features: f.features.filter((_, idx) => idx !== i) }))} className="opacity-0 group-hover:opacity-100 hover:text-red-400 text-white/30 transition-all"><X className="h-3.5 w-3.5" /></button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {form.features.length === 0 && <p className="text-white/20 text-xs px-1">No services added yet</p>}
             </div>
-            <div className="flex gap-3 pt-2">
+
+            <div className="flex gap-3">
               <button type="submit" disabled={createPlan.isPending || updatePlan.isPending} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50">
                 <Check className="h-4 w-4" /> {editId ? "Update Plan" : "Create Plan"}
               </button>
@@ -140,11 +220,16 @@ export default function AdminPlans() {
                       <Briefcase className={`h-5 w-5 ${color.text}`} />
                     </div>
                     <div>
-                      <h3 className="font-bold text-white">{plan.name}</h3>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs font-black ${color.text} opacity-60`}>#{idx + 1}</span>
+                        <h3 className="font-bold text-white">{plan.name}</h3>
+                      </div>
                       {plan.badge && <span className={`text-xs font-semibold ${color.text} ${color.bg} px-2 py-0.5 rounded-full`}>⭐ {plan.badge}</span>}
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-1">
+                    <button onClick={() => handleMoveOrder(plan, "up")} disabled={idx === 0} title="Show earlier on home page" className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/30 hover:text-white transition-colors disabled:opacity-20 disabled:cursor-not-allowed"><ArrowUp className="h-3 w-3" /></button>
+                    <button onClick={() => handleMoveOrder(plan, "down")} disabled={idx === sorted.length - 1} title="Show later on home page" className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/30 hover:text-white transition-colors disabled:opacity-20 disabled:cursor-not-allowed"><ArrowDown className="h-3 w-3" /></button>
                     <button onClick={() => handleEdit(plan)} className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-colors"><Edit2 className="h-3.5 w-3.5" /></button>
                     <button onClick={() => handleDelete(plan.id, plan.name)} className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
                   </div>

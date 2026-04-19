@@ -121,7 +121,7 @@ export default function AdminEarnings() {
                 type="number"
                 step="0.01"
                 min="0"
-                placeholder="Amount ($)"
+                placeholder="Amount (₹)"
                 required
                 className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none placeholder:text-white/20"
               />
@@ -166,28 +166,28 @@ export default function AdminEarnings() {
           <div className="w-9 h-9 bg-emerald-500/10 rounded-xl flex items-center justify-center mb-3">
             <DollarSign className="h-4 w-4 text-emerald-400" />
           </div>
-          <div className="text-2xl font-black text-white">${totalRevenue.toFixed(0)}</div>
+          <div className="text-2xl font-black text-white">₹{totalRevenue.toLocaleString("en-IN")}</div>
           <div className="text-xs text-white/30 mt-1">Total Revenue</div>
         </div>
         <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-5">
           <div className="w-9 h-9 bg-blue-500/10 rounded-xl flex items-center justify-center mb-3">
             <TrendingUp className="h-4 w-4 text-blue-400" />
           </div>
-          <div className="text-2xl font-black text-white">${totalSalary.toFixed(0)}</div>
+          <div className="text-2xl font-black text-white">₹{totalSalary.toLocaleString("en-IN")}</div>
           <div className="text-xs text-white/30 mt-1">Total Payouts</div>
         </div>
         <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-5">
           <div className="w-9 h-9 bg-yellow-500/10 rounded-xl flex items-center justify-center mb-3">
             <Clock className="h-4 w-4 text-yellow-400" />
           </div>
-          <div className="text-2xl font-black text-white">${pending.toFixed(0)}</div>
+          <div className="text-2xl font-black text-white">₹{pending.toLocaleString("en-IN")}</div>
           <div className="text-xs text-white/30 mt-1">Pending Payments</div>
         </div>
         <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-5">
           <div className="w-9 h-9 bg-purple-500/10 rounded-xl flex items-center justify-center mb-3">
             <CheckCircle className="h-4 w-4 text-purple-400" />
           </div>
-          <div className="text-2xl font-black text-white">${profit.toFixed(0)}</div>
+          <div className="text-2xl font-black text-white">₹{profit.toLocaleString("en-IN")}</div>
           <div className="text-xs text-white/30 mt-1">Net Profit</div>
         </div>
       </div>
@@ -216,7 +216,7 @@ export default function AdminEarnings() {
                     {e.type}
                   </span>
                 </td>
-                <td className="px-6 py-4 font-bold text-white">${e.amount.toFixed(2)}</td>
+                <td className="px-6 py-4 font-bold text-white">₹{e.amount.toLocaleString("en-IN")}</td>
                 <td className="px-6 py-4">
                   <span className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${statusColors[e.status] ?? "bg-white/5 text-white/30"}`}>
                     {e.status}

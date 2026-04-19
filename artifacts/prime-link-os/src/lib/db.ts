@@ -625,6 +625,29 @@ export function useUpdateEarning() {
   });
 }
 
+export function useCreateEarning() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: {
+      userId: string;
+      amount: number;
+      type: string;
+      description?: string;
+      status?: string;
+    }) => {
+      const { error } = await supabase.from("earnings").insert({
+        user_id: data.userId,
+        amount: data.amount,
+        type: data.type,
+        description: data.description ?? null,
+        status: data.status ?? "pending",
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: getListEarningsQueryKey() }),
+  });
+}
+
 // ─── Messages ──────────────────────────────────────────────────────────────────
 
 export function useListMessages(
