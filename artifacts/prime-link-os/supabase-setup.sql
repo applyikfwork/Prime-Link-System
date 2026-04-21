@@ -113,6 +113,29 @@ create table if not exists pages (
 
 alter table pages disable row level security;
 
+-- ─── Storage bucket for site assets (favicon, logo uploads) ──
+insert into storage.buckets (id, name, public)
+values ('site-assets', 'site-assets', true)
+on conflict (id) do update set public = true;
+
+-- Allow public uploads / reads / deletes (anon key) for site-assets bucket.
+-- (Admin actions are gated in the app UI; tighten with RLS if you add real auth.)
+drop policy if exists "site-assets read" on storage.objects;
+create policy "site-assets read" on storage.objects
+  for select using (bucket_id = 'site-assets');
+
+drop policy if exists "site-assets insert" on storage.objects;
+create policy "site-assets insert" on storage.objects
+  for insert with check (bucket_id = 'site-assets');
+
+drop policy if exists "site-assets update" on storage.objects;
+create policy "site-assets update" on storage.objects
+  for update using (bucket_id = 'site-assets') with check (bucket_id = 'site-assets');
+
+drop policy if exists "site-assets delete" on storage.objects;
+create policy "site-assets delete" on storage.objects
+  for delete using (bucket_id = 'site-assets');
+
 -- ─── Site Settings (singleton row, id = 1) ───────────────────
 create table if not exists site_settings (
   id integer primary key default 1 check (id = 1),
