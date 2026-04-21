@@ -1,6 +1,6 @@
 import { Link } from "wouter";
-import { ArrowRight, BarChart3, Globe, Search, Shield, Star, TrendingUp, Users, Zap, Mail, Phone, MapPin, Check, Rocket, Target, Crown } from "lucide-react";
-import { useListPlans } from "@/lib/db";
+import { ArrowRight, BarChart3, Globe, Search, Shield, Star, TrendingUp, Users, Zap, MapPin, Check, Rocket, Target, Crown } from "lucide-react";
+import { useListPlans, useListPages } from "@/lib/db";
 
 const services = [
   { icon: Search, title: "SEO Optimization", desc: "Rank higher on Google with data-driven strategies, technical audits, and content optimization." },
@@ -80,6 +80,7 @@ const PLAN_STYLES = [
 
 export default function HomePage() {
   const { data: plans } = useListPlans();
+  const { data: footerPages } = useListPages({ visibleOnly: true });
 
   return (
     <div className="min-h-screen bg-[#09090f] text-white">
@@ -325,21 +326,36 @@ export default function HomePage() {
             </button>
           </div>
           <div className="flex flex-col md:flex-row items-center justify-center gap-8 mt-12 text-white/30 text-sm">
-            <div className="flex items-center gap-2"><Mail className="h-4 w-4" />contact@primelink.io</div>
-            <div className="flex items-center gap-2"><Phone className="h-4 w-4" />+91 99999 00000</div>
             <div className="flex items-center gap-2"><MapPin className="h-4 w-4" />India</div>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/5 py-8 px-6">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div>
-            <span className="font-black text-white">PRIME LINK</span>
-            <span className="font-black text-blue-500"> OS</span>
+      <footer className="border-t border-white/5 py-10 px-6">
+        <div className="max-w-7xl mx-auto flex flex-col gap-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div>
+              <span className="font-black text-white">PRIME LINK</span>
+              <span className="font-black text-blue-500"> OS</span>
+            </div>
+            {footerPages && footerPages.length > 0 && (
+              <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+                {footerPages.map((p) => (
+                  <Link
+                    key={p.id}
+                    href={`/pages/${p.slug}`}
+                    className="text-white/40 hover:text-white text-sm transition-colors"
+                  >
+                    {p.title}
+                  </Link>
+                ))}
+              </nav>
+            )}
           </div>
-          <p className="text-white/20 text-sm">© 2024 Prime Link. All rights reserved.</p>
+          <div className="border-t border-white/5 pt-6 text-center md:text-left">
+            <p className="text-white/20 text-sm">© {new Date().getFullYear()} Prime Link. All rights reserved.</p>
+          </div>
         </div>
       </footer>
     </div>

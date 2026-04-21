@@ -99,6 +99,20 @@ alter table tasks disable row level security;
 alter table earnings disable row level security;
 alter table messages disable row level security;
 
+-- ─── Pages Table (admin-managed footer pages) ───────────────
+create table if not exists pages (
+  id uuid default uuid_generate_v4() primary key,
+  slug text unique not null,
+  title text not null,
+  content text not null default '',
+  is_visible boolean not null default true,
+  sort_order integer not null default 0,
+  created_at timestamptz default now() not null,
+  updated_at timestamptz default now() not null
+);
+
+alter table pages disable row level security;
+
 -- ─── Enable Realtime Replication ─────────────────────────────
 alter publication supabase_realtime add table messages;
 alter publication supabase_realtime add table users;

@@ -15,6 +15,8 @@ import AdminClients from "@/pages/admin/clients";
 import AdminTasks from "@/pages/admin/tasks";
 import AdminEarnings from "@/pages/admin/earnings";
 import AdminPlans from "@/pages/admin/plans";
+import AdminPages from "@/pages/admin/pages";
+import PageView from "@/pages/page-view";
 import ChatPage from "@/pages/shared/chat";
 import SalesmanDashboard from "@/pages/salesman/dashboard";
 import AddClientPage from "@/pages/salesman/add-client";
@@ -61,6 +63,7 @@ function Router() {
     <Switch>
       {/* Public */}
       <Route path="/" component={HomePage} />
+      <Route path="/pages/:slug" component={PageView} />
 
       {/* Hidden login routes */}
       <Route path="/Admin.primelink.sec.mang.dash" component={AdminLoginPage} />
@@ -84,6 +87,9 @@ function Router() {
       </Route>
       <Route path="/admin/plans">
         <ProtectedAdminRoute component={AdminPlans} />
+      </Route>
+      <Route path="/admin/pages">
+        <ProtectedAdminRoute component={AdminPages} />
       </Route>
       <Route path="/admin/chat">
         <ProtectedAdminRoute component={ChatPage} />

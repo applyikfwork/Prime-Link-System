@@ -1,7 +1,7 @@
 import React from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation, Link } from "wouter";
-import { LayoutDashboard, Users, UserSquare, CheckSquare, DollarSign, MessageSquare, Briefcase, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, UserSquare, CheckSquare, DollarSign, MessageSquare, Briefcase, FileText, LogOut } from "lucide-react";
 import { useLogout } from "@/lib/db";
 
 export function Sidebar() {
@@ -19,6 +19,7 @@ export function Sidebar() {
     { href: "/admin/tasks", icon: CheckSquare, label: "Tasks" },
     { href: "/admin/earnings", icon: DollarSign, label: "Earnings" },
     { href: "/admin/plans", icon: Briefcase, label: "Plans" },
+    { href: "/admin/pages", icon: FileText, label: "Pages" },
     { href: "/admin/chat", icon: MessageSquare, label: "Chat" },
   ];
 

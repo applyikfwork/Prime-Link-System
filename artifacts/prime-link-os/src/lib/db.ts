@@ -56,6 +56,17 @@ export type Plan = {
   createdAt: string;
 };
 
+export type Page = {
+  id: string;
+  slug: string;
+  title: string;
+  content: string;
+  isVisible: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type Earning = {
   id: string;
   userId: string;
@@ -189,6 +200,20 @@ function mapPlan(r: any): Plan {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapPage(r: any): Page {
+  return {
+    id: r.id,
+    slug: r.slug,
+    title: r.title,
+    content: r.content ?? "",
+    isVisible: !!r.is_visible,
+    sortOrder: Number(r.sort_order ?? 0),
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapEarning(r: any): Earning {
   return {
     id: r.id,
@@ -219,6 +244,8 @@ export const getListUsersQueryKey = () => ["users"] as const;
 export const getListClientsQueryKey = (_p?: object) => ["clients"] as const;
 export const getListTasksQueryKey = (_p?: object) => ["tasks"] as const;
 export const getListPlansQueryKey = () => ["plans"] as const;
+export const getListPagesQueryKey = () => ["pages"] as const;
+export const getPageBySlugQueryKey = (slug: string) => ["pages", slug] as const;
 export const getListEarningsQueryKey = (_p?: object) => ["earnings"] as const;
 export const getListMessagesQueryKey = (_p?: object) => ["messages"] as const;
 
@@ -592,6 +619,118 @@ export function useDeletePlan() {
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: getListPlansQueryKey() }),
+  });
+}
+
+// ─── Pages ─────────────────────────────────────────────────────────────────────
+
+export function useListPages(opts: { visibleOnly?: boolean } = {}) {
+  return useQuery({
+    queryKey: opts.visibleOnly ? ["pages", "visible"] : getListPagesQueryKey(),
+    queryFn: async () => {
+      let query = supabase.from("pages").select("*").order("sort_order", { ascending: true });
+      if (opts.visibleOnly) query = query.eq("is_visible", true);
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data ?? []).map(mapPage);
+    },
+  });
+}
+
+export function usePageBySlug(slug: string) {
+  return useQuery({
+    queryKey: getPageBySlugQueryKey(slug),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("pages")
+        .select("*")
+        .eq("slug", slug)
+        .maybeSingle();
+      if (error) throw error;
+      return data ? mapPage(data) : null;
+    },
+    enabled: !!slug,
+  });
+}
+
+export function useCreatePage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      data,
+    }: {
+      data: {
+        slug: string;
+        title: string;
+        content?: string;
+        isVisible?: boolean;
+        sortOrder?: number;
+      };
+    }) => {
+      const { data: row, error } = await supabase
+        .from("pages")
+        .insert({
+          slug: data.slug.trim().toLowerCase(),
+          title: data.title.trim(),
+          content: data.content ?? "",
+          is_visible: data.isVisible ?? true,
+          sort_order: data.sortOrder ?? 0,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      return mapPage(row);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: getListPagesQueryKey() });
+      qc.invalidateQueries({ queryKey: ["pages", "visible"] });
+    },
+  });
+}
+
+export function useUpdatePage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Partial<{
+        slug: string;
+        title: string;
+        content: string;
+        isVisible: boolean;
+        sortOrder: number;
+      }>;
+    }) => {
+      const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+      if (data.slug !== undefined) updates.slug = data.slug.trim().toLowerCase();
+      if (data.title !== undefined) updates.title = data.title;
+      if (data.content !== undefined) updates.content = data.content;
+      if (data.isVisible !== undefined) updates.is_visible = data.isVisible;
+      if (data.sortOrder !== undefined) updates.sort_order = data.sortOrder;
+      const { error } = await supabase.from("pages").update(updates).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: getListPagesQueryKey() });
+      qc.invalidateQueries({ queryKey: ["pages", "visible"] });
+    },
+  });
+}
+
+export function useDeletePage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id }: { id: string }) => {
+      const { error } = await supabase.from("pages").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: getListPagesQueryKey() });
+      qc.invalidateQueries({ queryKey: ["pages", "visible"] });
+    },
   });
 }
 
