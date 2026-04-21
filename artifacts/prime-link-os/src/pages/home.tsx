@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Link } from "wouter";
-import { ArrowRight, BarChart3, Globe, Search, Shield, Star, TrendingUp, Users, Zap, MapPin, Check, Rocket, Target, Crown } from "lucide-react";
-import { useListPlans, useListPages } from "@/lib/db";
+import { ArrowRight, BarChart3, Globe, Search, Shield, Star, TrendingUp, Users, Zap, MapPin, Check, Rocket, Target, Crown, Loader2, CheckCircle2 } from "lucide-react";
+import { useListPlans, useListPages, useCreateAuditRequest } from "@/lib/db";
+import { useToast } from "@/hooks/use-toast";
 
 const services = [
   { icon: Search, title: "SEO Optimization", desc: "Rank higher on Google with data-driven strategies, technical audits, and content optimization." },
@@ -81,6 +83,30 @@ const PLAN_STYLES = [
 export default function HomePage() {
   const { data: plans } = useListPlans();
   const { data: footerPages } = useListPages({ visibleOnly: true });
+  const createRequest = useCreateAuditRequest();
+  const { toast } = useToast();
+  const [form, setForm] = useState({ name: "", email: "", business: "", phone: "", message: "" });
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmitAudit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name.trim() || !form.email.trim()) {
+      toast({ title: "Name and email are required", variant: "destructive" });
+      return;
+    }
+    createRequest.mutate(
+      { data: form },
+      {
+        onSuccess: () => {
+          setSubmitted(true);
+          setForm({ name: "", email: "", business: "", phone: "", message: "" });
+          toast({ title: "Request sent!", description: "We'll be in touch shortly." });
+        },
+        onError: (err: Error) =>
+          toast({ title: "Submission failed", description: err.message, variant: "destructive" }),
+      },
+    );
+  };
 
   return (
     <div className="min-h-screen bg-[#09090f] text-white">
@@ -314,16 +340,77 @@ export default function HomePage() {
             <p className="text-white/40 text-lg">Ready to dominate your local market? Get a free SEO audit today.</p>
           </div>
           <div className="max-w-xl mx-auto bg-white/[0.03] border border-white/5 rounded-2xl p-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-              <input type="text" placeholder="Your Name" className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500/50 placeholder:text-white/20 text-white" />
-              <input type="email" placeholder="Email Address" className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500/50 placeholder:text-white/20 text-white" />
-            </div>
-            <input type="text" placeholder="Your Business Name" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500/50 placeholder:text-white/20 text-white mb-4" />
-            <input type="text" placeholder="Phone Number" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500/50 placeholder:text-white/20 text-white mb-4" />
-            <textarea rows={3} placeholder="Tell us about your business and goals..." className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500/50 placeholder:text-white/20 text-white mb-4 resize-none" />
-            <button className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold transition-colors">
-              Request Free Audit
-            </button>
+            {submitted ? (
+              <div className="text-center py-8">
+                <div className="w-14 h-14 bg-emerald-500/15 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle2 className="h-7 w-7 text-emerald-400" />
+                </div>
+                <h3 className="text-xl font-black text-white mb-2">Request received!</h3>
+                <p className="text-white/40 text-sm mb-6">Our team will review your details and reach out shortly.</p>
+                <button
+                  onClick={() => setSubmitted(false)}
+                  className="text-blue-400 hover:text-blue-300 text-sm font-semibold transition-colors"
+                >
+                  Send another request
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmitAudit}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                  <input
+                    type="text"
+                    required
+                    value={form.name}
+                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                    placeholder="Your Name"
+                    className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500/50 placeholder:text-white/20 text-white"
+                  />
+                  <input
+                    type="email"
+                    required
+                    value={form.email}
+                    onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                    placeholder="Email Address"
+                    className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500/50 placeholder:text-white/20 text-white"
+                  />
+                </div>
+                <input
+                  type="text"
+                  value={form.business}
+                  onChange={(e) => setForm((f) => ({ ...f, business: e.target.value }))}
+                  placeholder="Your Business Name"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500/50 placeholder:text-white/20 text-white mb-4"
+                />
+                <input
+                  type="tel"
+                  value={form.phone}
+                  onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                  placeholder="Phone Number"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500/50 placeholder:text-white/20 text-white mb-4"
+                />
+                <textarea
+                  rows={3}
+                  value={form.message}
+                  onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}
+                  placeholder="Tell us about your business and goals..."
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500/50 placeholder:text-white/20 text-white mb-4 resize-none"
+                />
+                <button
+                  type="submit"
+                  disabled={createRequest.isPending}
+                  className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {createRequest.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    "Request Free Audit"
+                  )}
+                </button>
+              </form>
+            )}
           </div>
           <div className="flex flex-col md:flex-row items-center justify-center gap-8 mt-12 text-white/30 text-sm">
             <div className="flex items-center gap-2"><MapPin className="h-4 w-4" />India</div>

@@ -16,7 +16,10 @@ import AdminTasks from "@/pages/admin/tasks";
 import AdminEarnings from "@/pages/admin/earnings";
 import AdminPlans from "@/pages/admin/plans";
 import AdminPages from "@/pages/admin/pages";
+import AdminSettings from "@/pages/admin/settings";
+import AdminAuditRequests from "@/pages/admin/audit-requests";
 import PageView from "@/pages/page-view";
+import { SiteHead } from "@/components/site-head";
 import ChatPage from "@/pages/shared/chat";
 import SalesmanDashboard from "@/pages/salesman/dashboard";
 import AddClientPage from "@/pages/salesman/add-client";
@@ -91,6 +94,12 @@ function Router() {
       <Route path="/admin/pages">
         <ProtectedAdminRoute component={AdminPages} />
       </Route>
+      <Route path="/admin/audit-requests">
+        <ProtectedAdminRoute component={AdminAuditRequests} />
+      </Route>
+      <Route path="/admin/settings">
+        <ProtectedAdminRoute component={AdminSettings} />
+      </Route>
       <Route path="/admin/chat">
         <ProtectedAdminRoute component={ChatPage} />
       </Route>
@@ -134,6 +143,7 @@ function App() {
       <TooltipProvider>
         <AuthProvider>
           <WouterRouter base={import.meta.env.BASE_URL?.replace(/\/$/, "") || ""}>
+            <SiteHead />
             <Router />
           </WouterRouter>
         </AuthProvider>

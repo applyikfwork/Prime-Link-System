@@ -113,6 +113,39 @@ create table if not exists pages (
 
 alter table pages disable row level security;
 
+-- ─── Site Settings (singleton row, id = 1) ───────────────────
+create table if not exists site_settings (
+  id integer primary key default 1 check (id = 1),
+  site_title text not null default 'Prime Link OS',
+  favicon_url text,
+  logo_url text,
+  updated_at timestamptz default now() not null
+);
+
+insert into site_settings (id, site_title) values (1, 'Prime Link OS')
+on conflict (id) do nothing;
+
+alter table site_settings disable row level security;
+
+-- ─── Audit Requests (contact form submissions) ───────────────
+create table if not exists audit_requests (
+  id uuid default uuid_generate_v4() primary key,
+  name text not null,
+  email text not null,
+  business text,
+  phone text,
+  message text,
+  status text not null default 'new' check (status in ('new', 'contacted', 'archived')),
+  created_at timestamptz default now() not null
+);
+
+create index if not exists audit_requests_created_at_idx on audit_requests (created_at desc);
+create index if not exists audit_requests_status_idx on audit_requests (status);
+
+alter table audit_requests disable row level security;
+
+alter publication supabase_realtime add table audit_requests;
+
 -- ─── Enable Realtime Replication ─────────────────────────────
 alter publication supabase_realtime add table messages;
 alter publication supabase_realtime add table users;

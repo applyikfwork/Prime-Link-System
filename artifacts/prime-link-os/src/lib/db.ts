@@ -67,6 +67,24 @@ export type Page = {
   updatedAt: string;
 };
 
+export type SiteSettings = {
+  siteTitle: string;
+  faviconUrl: string | null;
+  logoUrl: string | null;
+  updatedAt: string;
+};
+
+export type AuditRequest = {
+  id: string;
+  name: string;
+  email: string;
+  business: string | null;
+  phone: string | null;
+  message: string | null;
+  status: "new" | "contacted" | "archived";
+  createdAt: string;
+};
+
 export type Earning = {
   id: string;
   userId: string;
@@ -246,6 +264,8 @@ export const getListTasksQueryKey = (_p?: object) => ["tasks"] as const;
 export const getListPlansQueryKey = () => ["plans"] as const;
 export const getListPagesQueryKey = () => ["pages"] as const;
 export const getPageBySlugQueryKey = (slug: string) => ["pages", slug] as const;
+export const getSiteSettingsQueryKey = () => ["site-settings"] as const;
+export const getListAuditRequestsQueryKey = () => ["audit-requests"] as const;
 export const getListEarningsQueryKey = (_p?: object) => ["earnings"] as const;
 export const getListMessagesQueryKey = (_p?: object) => ["messages"] as const;
 
@@ -1001,5 +1021,126 @@ export function useGetTopPerformers() {
 
       return { topSalesmen, topWorkers } as TopPerformers;
     },
+  });
+}
+
+// ─── Site Settings ─────────────────────────────────────────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapSiteSettings(r: any): SiteSettings {
+  return {
+    siteTitle: r?.site_title ?? "Prime Link OS",
+    faviconUrl: r?.favicon_url ?? null,
+    logoUrl: r?.logo_url ?? null,
+    updatedAt: r?.updated_at ?? new Date().toISOString(),
+  };
+}
+
+export function useSiteSettings() {
+  return useQuery({
+    queryKey: getSiteSettingsQueryKey(),
+    queryFn: async (): Promise<SiteSettings> => {
+      const { data, error } = await supabase
+        .from("site_settings")
+        .select("*")
+        .eq("id", 1)
+        .maybeSingle();
+      if (error) throw error;
+      return mapSiteSettings(data ?? {});
+    },
+    staleTime: 60_000,
+  });
+}
+
+export function useUpdateSiteSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ data }: { data: Partial<{ siteTitle: string; faviconUrl: string | null; logoUrl: string | null }> }) => {
+      const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+      if (data.siteTitle !== undefined) updates.site_title = data.siteTitle;
+      if (data.faviconUrl !== undefined) updates.favicon_url = data.faviconUrl || null;
+      if (data.logoUrl !== undefined) updates.logo_url = data.logoUrl || null;
+      const { error } = await supabase
+        .from("site_settings")
+        .upsert({ id: 1, ...updates }, { onConflict: "id" });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: getSiteSettingsQueryKey() }),
+  });
+}
+
+// ─── Audit Requests ────────────────────────────────────────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapAuditRequest(r: any): AuditRequest {
+  return {
+    id: r.id,
+    name: r.name,
+    email: r.email,
+    business: r.business ?? null,
+    phone: r.phone ?? null,
+    message: r.message ?? null,
+    status: r.status,
+    createdAt: r.created_at,
+  };
+}
+
+export function useListAuditRequests() {
+  return useQuery({
+    queryKey: getListAuditRequestsQueryKey(),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("audit_requests")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []).map(mapAuditRequest);
+    },
+  });
+}
+
+export function useCreateAuditRequest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ data }: { data: { name: string; email: string; business?: string; phone?: string; message?: string } }) => {
+      const { data: row, error } = await supabase
+        .from("audit_requests")
+        .insert({
+          name: data.name.trim(),
+          email: data.email.trim(),
+          business: data.business?.trim() || null,
+          phone: data.phone?.trim() || null,
+          message: data.message?.trim() || null,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      return mapAuditRequest(row);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: getListAuditRequestsQueryKey() }),
+  });
+}
+
+export function useUpdateAuditRequest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<{ status: AuditRequest["status"] }> }) => {
+      const updates: Record<string, unknown> = {};
+      if (data.status !== undefined) updates.status = data.status;
+      const { error } = await supabase.from("audit_requests").update(updates).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: getListAuditRequestsQueryKey() }),
+  });
+}
+
+export function useDeleteAuditRequest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id }: { id: string }) => {
+      const { error } = await supabase.from("audit_requests").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: getListAuditRequestsQueryKey() }),
   });
 }
